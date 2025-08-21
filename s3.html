@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal Document Analyzer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 30px;
+      text-align: center;
+      font-size: 2.5em;
+      font-weight: 300;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .upload-section {
+      border: 3px dashed #bdc3c7;
+      padding: 50px;
+      text-align: center;
+      margin-bottom: 30px;
+      border-radius: 15px;
+      cursor: pointer;
+      background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upload-section:before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: rotate(45deg);
+      transition: all 0.6s;
+      opacity: 0;
+    }
+
+    .upload-section:hover:before {
+      animation: shine 1.5s ease-in-out;
+    }
+
+    @keyframes shine {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: translateX(100%) translateY(100%) rotate(45deg); opacity: 0; }
+    }
+
+    .upload-section:hover {
+      border-color: #3498db;
+      background: linear-gradient(45deg, #ecf0f1, #bdc3c7);
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(52, 152, 219, 0.3);
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .api-section {
+      margin-bottom: 30px;
+      padding: 25px;
+      background: rgba(236, 240, 241, 0.8);
+      border-radius: 15px;
+      backdrop-filter: blur(5px);
+    }
+
+    .api-section label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .api-section select, .api-section input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #bdc3c7;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 15px;
+      transition: border-color 0.3s ease;
+    }
+
+    .api-section select:focus, .api-section input:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+    }
+
+    .progress {
+      display: none;
+      margin: 30px 0;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 25px;
+      background: #ecf0f1;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3498db, #2ecc71);
+      width: 0%;
+      transition: width 0.3s ease;
+      border-radius: 15px;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 30px;
+    }
+
+    .text-panel, .analysis-panel {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .text-display {
+      height: 500px;
+      overflow-y: auto;
+      border: 2px solid #ecf0f1;
+      border-radius: 10px;
+      padding: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      background: #fafafa;
+    }
+
+    .clause-highlight {
+      background: linear-gradient(120deg, #ff6b6b, #feca57);
+      padding: 2px 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 2px 0;
+      display: inline-block;
+      transition: all 0.3s ease;
+      position: relative;
+      box-shadow: 0 2px 5px rgba(255, 107, 107, 0.3);
+    }
+
+    .clause-highlight:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(255, 107, 107, 0.5);
+    }
+
+    .clause-explanation {
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid #3498db;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 15px 0;
+      box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .clause-type {
+      display: inline-block;
+      background: #3498db;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .summary-section {
+      display: none;
+      background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+      border-radius: 15px;
+      padding: 25px;
+      margin: 20px 0;
+      box-shadow: 0 10px 25px rgba(255, 154, 158, 0.3);
+    }
+
+    .summary-content {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      line-height: 1.8;
+      min-height: 100px;
+    }
+
+    .error {
+      color: #e74c3c;
+      background: linear-gradient(135deg, #ffcccb, #ffebee);
+      padding: 15px;
+      border-radius: 10px;
+      margin: 15px 0;
+      border-left: 4px solid #e74c3c;
+    }
+
+    .loading {
+      text-align: center;
+      color: #7f8c8d;
+      font-style: italic;
+      padding: 20px;
+    }
+
+    .loading:after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #ecf0f1;
+      border-radius: 50%;
+      border-top-color: #3498db;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .analysis-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      background: #ecf0f1;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+      
+      .buttons {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚖️ AI Legal Document Analyzer</h1>
+    
+    <!-- File Upload -->
+    <div class="upload-section" id="uploadArea">
+      <p style="font-size: 1.3em; margin-bottom: 10px;">📄 Drop your legal document here</p>
+      <small>Contracts, agreements, legal documents (PDF format)</small>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf">
+    
+    <!-- API Configuration -->
+    <div class="api-section">
+      <label for="apiProvider">AI Provider:</label>
+      <select id="apiProvider">
+        <option value="google">Google (Gemini) - Recommended</option>
+        <option value="openai">OpenAI (GPT-4, GPT-3.5)</option>
+        <option value="anthropic">Anthropic (Claude)</option>
+      </select>
+      
+      <label for="apiKey">API Key:</label>
+      <input type="password" id="apiKey" placeholder="Enter your API key">
+      
+      <div class="api-details" id="apiDetails">
+        Your API key is secure and only used for this session
+      </div>
+    </div>
+    
+    <!-- Progress -->
+    <div class="progress" id="progressContainer">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <p id="progressText" style="text-align: center; margin-top: 10px;">Processing...</p>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent" style="display: none;">
+      <!-- Text Panel -->
+      <div class="text-panel">
+        <h3>📋 Document Content</h3>
+        <div class="buttons">
+          <button onclick="analyzeDocument()" id="analyzeBtn">🔍 Analyze Clauses</button>
+          <button onclick="generateSummary()" id="summaryBtn">📝 Generate Summary</button>
+        </div>
+        <div class="text-display" id="textDisplay"></div>
+      </div>
+      
+      <!-- Analysis Panel -->
+      <div class="analysis-panel">
+        <div class="analysis-tabs">
+          <button class="tab active" onclick="showTab('clauses')">Legal Clauses</button>
+          <button class="tab" onclick="showTab('summary')">Summary</button>
+        </div>
+        
+        <div class="tab-content active" id="clauses-tab">
+          <h3>⚖️ Clause Analysis</h3>
+          <div id="clauseExplanations">
+            <p style="text-align: center; color: #7f8c8d; padding: 40px;">
+              Click "Analyze Clauses" to identify and explain legal terms in your document
+            </p>
+          </div>
+        </div>
+        
+        <div class="tab-content" id="summary-tab">
+          <div class="summary-section" id="summarySection" style="display: block; background: transparent; box-shadow: none; padding: 0; margin: 0;">
+            <div class="summary-content" id="summaryContent" style="background: transparent;">
+              <p style="text-align: center; color: #7f8c8d; padding: 40px;">
+                Click "Generate Summary" to get a plain English explanation of the document
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize PDF.js
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+
+    const fileInput = document.getElementById('fileInput');
+    const uploadArea = document.getElementById('uploadArea');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const mainContent = document.getElementById('mainContent');
+    const textDisplay = document.getElementById('textDisplay');
+    const clauseExplanations = document.getElementById('clauseExplanations');
+    const summaryContent = document.getElementById('summaryContent');
+    
+    let extractedText = '';
+    let analyzedClauses = [];
+
+    // --------- Formatting helpers (ADD) ----------
+    function escapeHTML(s) {
+      return String(s)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;');
+    }
+
+    function formatDocument(text) {
+      // normalize whitespace
+      let t = String(text).replace(/\r/g,'').replace(/\u00A0/g,' ').replace(/[ \t]+/g,' ').trim();
+
+      // add soft breaks after sentence-ish boundaries before likely new starters
+      t = t.replace(/([.;:])\s+(?=[A-Z(•\-]|\d)/g, '$1\n');
+
+      // encourage breaks before common section/heading words
+      t = t
+        .replace(/\s+(Section\s+\d+(\.\d+)*[:.)]?)/gi, '\n$1')
+        .replace(/\s+(Clause\s+\d+(\.\d+)*[:.)]?)/gi, '\n$1')
+        .replace(/\s+(WHEREAS|NOW,\s*THEREFORE|DEFINITIONS|TERMINATION|GOVERNING LAW|PAYMENT|CONFIDENTIALITY)[:.)]?/gi, '\n$1');
+
+      const lines = t.split(/\n+/).map(s => s.trim()).filter(Boolean);
+
+      const isNum = s => /^\d+(\.\d+)*[.)]?\s+/.test(s);
+      const isParen = s => /^\([a-zA-Z0-9ivx]+\)\s+/i.test(s);
+      const isBullet = s => /^[•\-–]\s+/.test(s);
+
+      const blocks = [];
+      let buf = [];
+      let mode = null; // 'ol' | 'ul' | null
+
+      const flush = () => {
+        if (!buf.length) return;
+        if (mode === 'ol') {
+          blocks.push('<ol>' + buf.map(li => `<li>${escapeHTML(li)}</li>`).join('') + '</ol>');
+        } else if (mode === 'ul') {
+          blocks.push('<ul>' + buf.map(li => `<li>${escapeHTML(li)}</li>`).join('') + '</ul>');
+        } else {
+          const para = buf.join(' ').replace(/\s{2,}/g,' ').trim();
+          if (para) blocks.push(`<p>${escapeHTML(para)}</p>`);
+        }
+        buf = [];
+        mode = null;
+      };
+
+      for (const line of lines) {
+        if (isNum(line) || isParen(line)) {
+          const cleaned = line
+            .replace(/^\d+(\.\d+)*[.)]?\s+/, '')
+            .replace(/^\([a-zA-Z0-9ivx]+\)\s+/i, '');
+          if (mode !== 'ol') { flush(); mode = 'ol'; }
+          buf.push(cleaned);
+        } else if (isBullet(line)) {
+          const cleaned = line.replace(/^[•\-–]\s+/, '');
+          if (mode !== 'ul') { flush(); mode = 'ul'; }
+          buf.push(cleaned);
+        } else {
+          if (mode) flush();
+          // split long clauses on semicolons into separate paras
+          const parts = line.split(/;\s+/);
+          for (let i = 0; i < parts.length; i++) {
+            buf.push(parts[i]);
+            if (i < parts.length - 1) flush();
+          }
+        }
+      }
+      flush();
+
+      return blocks.join('\n');
+    }
+    // --------- /Formatting helpers ----------
+
+    // API configurations
+    const apiConfigs = {
+      google: {
+        endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+        buildRequest: (text, type) => ({
+          contents: [{
+            parts: [{
+              text: type === 'analyze' ? 
+                `As a legal expert, analyze this document and identify important legal clauses. For each clause found, provide:
+1. The exact text of the clause
+2. Clause type (e.g., "Termination", "Payment", "Liability", "Confidentiality")
+3. Plain English explanation
+4. Potential risks or benefits
+
+Format your response as JSON with this structure:
+{
+  "clauses": [
+    {
+      "text": "exact clause text",
+      "type": "Clause Type",
+      "explanation": "plain English explanation",
+      "risk_level": "low/medium/high"
+    }
+  ]
+}
+
+Document text:
+${text}` :
+                `Summarize this legal document in plain English, focusing on key obligations, rights, and important terms:
+
+${text}`
+            }]
+          }]
+        }),
+        extractResponse: (data) => data.candidates[0].content.parts[0].text,
+        buildHeaders: (apiKey) => ({ 'Content-Type': 'application/json' }),
+        getEndpoint: (apiKey) => `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+      }
+    };
+
+    // File upload events
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.style.borderColor = '#3498db';
+    });
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.style.borderColor = '#bdc3c7';
+    });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.style.borderColor = '#bdc3c7';
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      if (file.type !== 'application/pdf') {
+        alert('Please upload a PDF file.');
+        return;
+      }
+      extractPDF(file);
+    }
+
+    async function extractPDF(file) {
+      progressContainer.style.display = 'block';
+      mainContent.style.display = 'none';
+      
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        const numPages = pdf.numPages;
+        
+        extractedText = '';
+        
+        for (let i = 1; i <= numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          extractedText += pageText + '\n\n';
+          
+          const progress = Math.round((i / numPages) * 100);
+          progressFill.style.width = progress + '%';
+          progressText.textContent = `Processing page ${i} of ${numPages}...`;
+        }
+        
+        /* CHANGED: render formatted document instead of raw <pre> */
+        textDisplay.innerHTML = formatDocument(extractedText);
+
+        progressContainer.style.display = 'none';
+        mainContent.style.display = 'grid';
+        
+      } catch (error) {
+        console.error('PDF extraction error:', error);
+        progressContainer.style.display = 'none';
+        showError('Failed to extract text from PDF. Please try a different file.');
+      }
+    }
+
+    async function analyzeDocument() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      
+      if (!apiKey) {
+        alert('Please enter your API key');
+        return;
+      }
+      
+      if (!extractedText) {
+        alert('Please upload a document first');
+        return;
+      }
+
+      clauseExplanations.innerHTML = '<div class="loading">Analyzing legal clauses...</div>';
+      showTab('clauses');
+      
+      try {
+        const config = apiConfigs.google;
+        const endpoint = config.getEndpoint(apiKey);
+        const requestData = config.buildRequest(extractedText, 'analyze');
+        const headers = config.buildHeaders(apiKey);
+        
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(requestData)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const analysisText = config.extractResponse(data);
+        
+        // Parse the JSON response
+        let analysisData;
+        try {
+          const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            analysisData = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('No JSON found in response');
+          }
+        } catch (parseError) {
+          // Fallback: treat as plain text
+          analysisData = { clauses: [{ 
+            text: "Analysis completed", 
+            type: "General", 
+            explanation: analysisText,
+            risk_level: "medium"
+          }] };
+        }
+        
+        displayClauseAnalysis(analysisData.clauses || []);
+        highlightClausesInText(analysisData.clauses || []);
+        
+      } catch (error) {
+        console.error('Analysis error:', error);
+        clauseExplanations.innerHTML = `<div class="error">Failed to analyze document: ${error.message}</div>`;
+      }
+    }
+
+    function displayClauseAnalysis(clauses) {
+      if (!clauses.length) {
+        clauseExplanations.innerHTML = '<p>No specific clauses identified.</p>';
+        return;
+      }
+
+      let html = '';
+      clauses.forEach((clause) => {
+        const riskColor = {
+          'low': '#27ae60',
+          'medium': '#f39c12', 
+          'high': '#e74c3c'
+        }[clause.risk_level] || '#3498db';
+
+        html += `
+          <div class="clause-explanation">
+            <span class="clause-type" style="background: ${riskColor};">${clause.type}</span>
+            <h4 style="margin: 10px 0; color: #2c3e50;">${clause.type} Clause</h4>
+            <p style="margin-bottom: 15px;"><strong>Found text:</strong> "${clause.text.substring(0, 100)}${clause.text.length > 100 ? '...' : ''}"</p>
+            <p><strong>Explanation:</strong> ${clause.explanation}</p>
+            <p style="margin-top: 10px; font-size: 12px; color: #7f8c8d;">Risk Level: ${String(clause.risk_level || '').toUpperCase()}</p>
+          </div>
+        `;
+      });
+      
+      clauseExplanations.innerHTML = html;
+    }
+
+    function highlightClausesInText(clauses) {
+      let highlightedText = extractedText;
+      
+      clauses.forEach((clause) => {
+        if (clause.text && clause.text.length > 10) {
+          const searchText = clause.text.substring(0, 50);
+          const regex = new RegExp(searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+          highlightedText = highlightedText.replace(
+            regex,
+            `<span class="clause-highlight" title="${clause.type}: ${clause.explanation.substring(0, 100)}...">$&</span>`
+          );
+        }
+      });
+      
+      // Keep highlight view simple (raw text with marks)
+      textDisplay.innerHTML = `<div style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;">${highlightedText}</div>`;
+    }
+
+    async function generateSummary() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      
+      if (!apiKey) {
+        alert('Please enter your API key');
+        return;
+      }
+      
+      if (!extractedText) {
+        alert('Please upload a document first');
+        return;
+      }
+      
+      summaryContent.innerHTML = '<div class="loading">Generating summary...</div>';
+      showTab('summary');
+      
+      try {
+        const config = apiConfigs.google;
+        const endpoint = config.getEndpoint(apiKey);
+        const requestData = config.buildRequest(extractedText, 'summary');
+        const headers = config.buildHeaders(apiKey);
+        
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(requestData)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const summary = config.extractResponse(data);
+        summaryContent.innerHTML = summary.replace(/\n/g, '<br>');
+        
+      } catch (error) {
+        console.error('Summary error:', error);
+        summaryContent.innerHTML = `<div class="error">Failed to generate summary: ${error.message}</div>`;
+      }
+    }
+
+    function showTab(tabName) {
+      // Update tab buttons
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelector(`.tab:nth-child(${tabName === 'clauses' ? '1' : '2'})`).classList.add('active');
+      
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.getElementById(`${tabName}-tab`).classList.add('active');
+    }
+
+    function showError(message) {
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error';
+      errorDiv.textContent = message;
+      document.querySelector('.container').insertBefore(errorDiv, mainContent);
+      setTimeout(() => errorDiv.remove(), 5000);
+    }
+  </script>
+</body>
+</html>
