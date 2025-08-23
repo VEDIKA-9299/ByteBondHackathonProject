@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LegalDemyst - Upload & Analyze</title>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:600,800|Lato:400,500" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Lato', sans-serif;
+      background: linear-gradient(135deg, #141E30, #243B55);
+      background-size: 300% 300%;
+      animation: gradientShift 20s ease infinite;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 20px;
+      overflow-x: hidden;
+      color: #fff;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1250px;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 50px;
+      align-items: center;
+    }
+
+    /* Left Section */
+    .left {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+    .left h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      line-height: 1.2;
+      font-family: 'Montserrat', sans-serif;
+    }
+    .left h1 span {
+      color: #2ECC71; /* Emerald green highlight */
+    }
+
+    .upload-box {
+      border: 2px dashed rgba(255,255,255,0.6);
+      border-radius: 20px;
+      padding: 70px 30px;
+      text-align: center;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(14px);
+      transition: all 0.4s ease;
+      cursor: pointer;
+    }
+    .upload-box:hover {
+      transform: scale(1.05);
+      border-color: #2ECC71;
+      box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
+      background: rgba(255,255,255,0.2);
+    }
+    .upload-box p {
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+    }
+    .upload-box small {
+      opacity: 0.8;
+    }
+    #fileInput { display: none; }
+
+    /* Buttons */
+    .buttons {
+      display: flex;
+      gap: 15px;
+    }
+    .btn {
+      flex: 1;
+      padding: 15px;
+      border: none;
+      border-radius: 40px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      transition: 0.4s ease;
+      color: #fff;
+      background: linear-gradient(135deg, #2A4D9B, #2ECC71);
+      letter-spacing: 0.5px;
+    }
+    .btn:hover {
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: 0 8px 20px rgba(243, 156, 18, 0.6); /* Gold glow */
+    }
+
+    /* Right Section */
+    .right {
+      background: #fff;
+      border-radius: 25px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      position: relative;
+      background: #fdfdfd;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 16px 0;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.3s ease;
+      font-family: 'Montserrat', sans-serif;
+      color: #555;
+    }
+    .tab.active { color: #2A4D9B; }
+    .indicator {
+      position: absolute;
+      bottom: 0;
+      height: 4px;
+      width: 33.33%;
+      background: #2ECC71;
+      transition: left 0.4s ease;
+      left: 0;
+    }
+
+    .tab-content {
+      flex: 1;
+      padding: 25px;
+      display: none;
+      animation: fadeIn 0.5s ease;
+      overflow-y: auto;
+    }
+    .tab-content.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity:0; transform: translateY(15px); }
+      to { opacity:1; transform: translateY(0); }
+    }
+
+    /* Inside Content */
+    .text-display {
+      font-size: 15px;
+      line-height: 1.7;
+      color: #333;
+    }
+    .summary-section {
+      font-size: 15px;
+      line-height: 1.7;
+      background: #f9fefe;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    /* Responsive */
+    @media(max-width: 1000px) {
+      .container { grid-template-columns: 1fr; }
+      .left { text-align: center; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Left -->
+    <div class="left">
+      <h1>⚖️ Simplify <span>Legal Documents</span></h1>
+      <div class="upload-box" onclick="document.getElementById('fileInput').click();">
+        <p>📄 Drop your contract or agreement here</p>
+        <small>Supported: DOC, DOCX, PDF</small>
+      </div>
+      <input type="file" id="fileInput" accept=".doc,.docx,.pdf">
+
+      <div class="buttons">
+        <button class="btn" onclick="generateSummary()">📝 Summarize</button>
+        <button class="btn" onclick="analyzeDocument()">🔍 Analyze</button>
+      </div>
+    </div>
+
+    <!-- Right -->
+    <div class="right">
+      <div class="tabs">
+        <div class="tab active" onclick="showTab(0)">📋 Document</div>
+        <div class="tab" onclick="showTab(1)">🔎 Clauses</div>
+        <div class="tab" onclick="showTab(2)">📝 Summary</div>
+        <div class="indicator"></div>
+      </div>
+
+      <div class="tab-content active" id="tab0">
+        <div class="text-display" id="textDisplay">
+          <p style="text-align:center; color:#888;">Upload a document to view its text here.</p>
+        </div>
+      </div>
+      <div class="tab-content" id="tab1">
+        <p style="text-align:center; color:#888; padding:30px;">Click "Analyze" to detect clauses</p>
+      </div>
+      <div class="tab-content" id="tab2">
+        <div class="summary-section" id="summarySection">
+          <p style="text-align:center; color:#888;">Click "Summarize" to generate a summary</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showTab(index) {
+      const tabs = document.querySelectorAll('.tab');
+      const contents = document.querySelectorAll('.tab-content');
+      tabs.forEach(t => t.classList.remove('active'));
+      contents.forEach(c => c.classList.remove('active'));
+      tabs[index].classList.add('active');
+      contents[index].classList.add('active');
+      document.querySelector('.indicator').style.left = `${index * 33.33}%`;
+    }
+
+    function analyzeDocument() {
+      document.getElementById('tab1').innerHTML =
+        "<p style='padding:20px; color:#2A4D9B;'>🔍 Analyzing clauses... (demo placeholder)</p>";
+      showTab(1);
+    }
+
+    function generateSummary() {
+      document.getElementById('summarySection').innerHTML =
+        "<p style='padding:20px; color:#2ECC71;'>📝 Generating summary... (demo placeholder)</p>";
+      showTab(2);
+    }
+  </script>
+</body>
+</html>
