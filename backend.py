@@ -1,0 +1,203 @@
+# backend.py
+import os
+import json
+import pytesseract
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+import google.generativeai as genai
+from google.generativeai.types import GenerationConfig
+import fitz  # PyMuPDF
+from PIL import Image
+import tempfile
+from dotenv import load_dotenv
+import asyncio
+
+# ----------------- Config / Setup -----------------
+tesseract_path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+if not os.path.exists(tesseract_path):
+    raise RuntimeError(
+        f"Tesseract OCR executable not found at: {tesseract_path}. "
+        "Please install Tesseract or update the path."
+    )
+pytesseract.pytesseract.tesseract_cmd = tesseract_path
+
+load_dotenv()
+api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+if not api_key:
+    api_key = "AIzaSyB4h2wCQMaWl2WuHv1C1kJmsBIbNoSuOmY"  # Replace with your actual key
+    print("Warning: GOOGLE_API_KEY not found; using placeholder. Replace before production.")
+genai.configure(api_key=api_key)
+
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:8000", "*"],  # adjust for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+MODEL_NAME = "gemini-1.5-flash"
+model = genai.GenerativeModel(MODEL_NAME)
+
+PROMPT_TEMPLATE = """
+You are an expert legal assistant. Analyze the following legal document and return ONLY valid JSON using EXACTLY these top-level keys:
+
+- "summary": (string) a concise summary of the document.
+- "extracted_terms": (array of strings) key legal terms and clauses.
+- "explanation": (string) explanation of key clauses in simple language.
+- "gaps": (array of strings) potential missing clauses, ambiguities, or risks.
+- "verdict": (string) either "Red Flag" or "No Major Red Flags".
+
+IMPORTANT:
+1) Respond with ONLY valid JSON and nothing else.
+2) "verdict" must be a top-level key.
+3) If you cannot find terms/gaps, return empty arrays.
+4) Keep values concise.
+"""
+
+# ----------------- Utility functions -----------------
+def repair_json(response_text: str) -> dict:
+    if not response_text:
+        return {"error": "Empty response from model", "raw": ""}
+
+    try:
+        parsed = json.loads(response_text)
+        return normalize_response(parsed)
+    except json.JSONDecodeError:
+        pass
+
+    try:
+        start = response_text.index("{")
+        end = response_text.rindex("}") + 1
+        candidate = response_text[start:end]
+        parsed = json.loads(candidate)
+        return normalize_response(parsed)
+    except Exception:
+        pass
+
+    return {"error": "Invalid JSON from model", "raw": response_text}
+
+def normalize_response(parsed: dict) -> dict:
+    out = {}
+    out["summary"] = parsed.get("summary") if isinstance(parsed.get("summary"), str) else (str(parsed.get("summary")) if parsed.get("summary") is not None else "—")
+
+    terms = parsed.get("extracted_terms") or parsed.get("terms") or parsed.get("key_terms")
+    if isinstance(terms, list):
+        out["extracted_terms"] = [str(x) for x in terms]
+    elif isinstance(terms, str):
+        if "," in terms:
+            out["extracted_terms"] = [s.strip() for s in terms.split(",") if s.strip()]
+        elif terms.strip():
+            out["extracted_terms"] = [terms.strip()]
+        else:
+            out["extracted_terms"] = []
+    else:
+        out["extracted_terms"] = []
+
+    out["explanation"] = parsed.get("explanation") if isinstance(parsed.get("explanation"), str) else (str(parsed.get("explanation")) if parsed.get("explanation") is not None else "—")
+
+    gaps = parsed.get("gaps") or parsed.get("missing_gaps")
+    if isinstance(gaps, list):
+        out["gaps"] = [str(x) for x in gaps]
+    elif isinstance(gaps, str):
+        if "," in gaps:
+            out["gaps"] = [s.strip() for s in gaps.split(",") if s.strip()]
+        elif gaps.strip():
+            out["gaps"] = [gaps.strip()]
+        else:
+            out["gaps"] = []
+    else:
+        out["gaps"] = []
+
+    verdict = parsed.get("verdict")
+    if isinstance(verdict, str):
+        out["verdict"] = verdict
+    else:
+        out["verdict"] = "No Major Red Flags" if not out["gaps"] else "Red Flag"
+
+    return out
+
+def extract_text_from_pdf_bytes(file_bytes: bytes) -> str:
+    text = ""
+    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+        for page in doc:
+            page_text = page.get_text()
+            if page_text:
+                text += page_text + "\n"
+    return text.strip()
+
+def ocr_pdf_bytes(file_bytes: bytes) -> str:
+    text = ""
+    with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+        for page in doc:
+            pix = page.get_pixmap(dpi=300)
+            mode = "RGB" if pix.n < 4 else "RGBA"
+            img = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
+            page_text = pytesseract.image_to_string(img)
+            if page_text:
+                text += page_text + "\n"
+    return text.strip()
+
+# ----------------- Main endpoint -----------------
+@app.post("/analyze")
+async def analyze_full_document(file: UploadFile = File(...)):
+    if not file:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+
+    filename = file.filename or "document"
+    suffix = filename.split(".")[-1].lower()
+    if suffix not in ("pdf", "png", "jpg", "jpeg"):
+        raise HTTPException(status_code=400, detail="Unsupported file type. Upload a PDF or image.")
+
+    file_bytes = await file.read()
+    extracted_text = ""
+    if suffix == "pdf":
+        extracted_text = extract_text_from_pdf_bytes(file_bytes)
+
+    if not extracted_text.strip():
+        if suffix == "pdf":
+            extracted_text = ocr_pdf_bytes(file_bytes)
+        else:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{suffix}") as tmp:
+                tmp.write(file_bytes)
+                tmp.flush()
+                img = Image.open(tmp.name)
+                extracted_text = pytesseract.image_to_string(img)
+
+    if not extracted_text.strip():
+        return {
+            "summary": "No text could be extracted from the uploaded file.",
+            "extracted_terms": [],
+            "explanation": "No text extracted to analyze.",
+            "gaps": [],
+            "verdict": "No Major Red Flags"
+        }
+
+    MAX_CHARS = 120000
+    text_to_send = extracted_text if len(extracted_text) <= MAX_CHARS else (extracted_text[:80000] + "\n\n...TRUNCATED...\n\n" + extracted_text[-40000:])
+    prompt = PROMPT_TEMPLATE + "\n\nDocument:\n" + text_to_send
+
+    try:
+        generation_config = GenerationConfig(response_mime_type="application/json")
+        response = await model.generate_content_async(prompt, generation_config=generation_config)
+        raw = response.text or ""
+        parsed = repair_json(raw)
+        if "error" in parsed:
+            return {
+                "summary": parsed.get("raw", "")[:800],
+                "extracted_terms": [],
+                "explanation": "Model returned malformed JSON; see raw for details.",
+                "gaps": [],
+                "verdict": "Unknown",
+                "raw": parsed.get("raw")
+            }
+        return parsed
+    except Exception as e:
+        return {
+            "summary": "Model call failed",
+            "extracted_terms": [],
+            "explanation": f"Model call failed: {str(e)}",
+            "gaps": [],
+            "verdict": "Unknown"
+        }
