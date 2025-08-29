@@ -29,8 +29,8 @@
 
     button {
       border-radius: 20px;
-      border: 1px solid #006D6D; /* dark teal border */
-      background-color: #006D6D; /* dark teal background */
+      border: 1px solid #006D6D;
+      background-color: #006D6D;
       color: #FFFFFF;
       font-size: 12px;
       font-weight: bold;
@@ -38,6 +38,7 @@
       letter-spacing: 1px;
       text-transform: uppercase;
       transition: transform 80ms ease-in;
+      cursor: pointer;
     }
 
     button:active { transform: scale(0.95); }
@@ -55,12 +56,33 @@
       text-align: center;
     }
 
+    .input-container {
+      position: relative;
+      width: 100%;
+    }
+
     input {
       background-color: #eee;
       border: none;
-      padding: 12px 15px;
+      padding: 12px 45px 12px 15px;
       margin: 8px 0;
       width: 100%;
+      border-radius: 5px;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #555;
+    }
+
+    .error-message {
+      color: red;
+      font-size: 13px;
+      margin-top: 5px;
     }
 
     .container {
@@ -127,7 +149,7 @@
     }
 
     .overlay {
-      background: linear-gradient(to right, #006D6D, #004F4F); /* dark teal gradient */
+      background: linear-gradient(to right, #006D6D, #004F4F);
       background-repeat: no-repeat;
       background-size: cover;
       background-position: 0 0;
@@ -165,18 +187,6 @@
     .overlay-right { right: 0; transform: translateX(0); }
     .container.right-panel-active .overlay-right { transform: translateX(20%); }
 
-    .social-container { margin: 20px 0; }
-    .social-container a {
-      border: 1px solid #DDDDDD;
-      border-radius: 50%;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      margin: 0 5px;
-      height: 40px;
-      width: 40px;
-    }
-
     footer {
       background-color: #222;
       color: #fff;
@@ -210,7 +220,10 @@
         <p style="font-size:12px; margin:10px 0;">New here? Create an account to upload, analyze your legal documents securely.</p>
         <input type="text" placeholder="Full Name" />
         <input type="email" placeholder="Email" />
-        <input type="password" placeholder="Password" />
+        <div class="input-container">
+          <input type="password" placeholder="Password" id="signupPassword"/>
+          <i class="fas fa-eye toggle-password" onclick="togglePassword('signupPassword', this)"></i>
+        </div>
         <button>Sign Up</button>
       </form>
     </div>
@@ -219,10 +232,14 @@
     <div class="form-container sign-in-container">
       <form action="#">
         <h1>Sign In</h1>
-        <p style="font-size:12px; margin:10px 0;">Already have an account?</p>
+        <p style="font-size:20px; margin:10px 0;">Already have an account?</p>
         <input type="email" placeholder="Email" />
-        <input type="password" placeholder="Password" />
+        <div class="input-container">
+          <input type="password" placeholder="Password" id="signinPassword"/>
+          <i class="fas fa-eye toggle-password" onclick="togglePassword('signinPassword', this)"></i>
+        </div>
         <a href="#">Forgot your password?</a>
+        <p id="errorBox" class="error-message"></p> <!-- 🔹 Added here -->
         <button>Sign In</button>
       </form>
     </div>
@@ -253,6 +270,7 @@
     const signInButton = document.getElementById('signIn');
     const container = document.getElementById('container');
 
+    // Switch panels
     signUpButton.addEventListener('click', () => {
       container.classList.add("right-panel-active");
     });
@@ -260,6 +278,58 @@
     signInButton.addEventListener('click', () => {
       container.classList.remove("right-panel-active");
     });
+
+    // Handle Sign Up
+    document.querySelector(".sign-up-container form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = e.target.querySelector("input[placeholder='Full Name']").value;
+      const email = e.target.querySelector("input[placeholder='Email']").value;
+      const password = e.target.querySelector("input[placeholder='Password']").value;
+
+      if (email && password) {
+        localStorage.setItem("userEmail", email);
+        localStorage.setItem("userPassword", password);
+
+        // Popup after signup
+        alert("✅ Account Created! Please Signin using your details.");
+
+        container.classList.remove("right-panel-active"); 
+      }
+    });
+
+    // Handle Sign In
+    document.querySelector(".sign-in-container form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = e.target.querySelector("input[placeholder='Email']").value;
+      const password = e.target.querySelector("input[placeholder='Password']").value;
+
+      const storedEmail = localStorage.getItem("userEmail");
+      const storedPassword = localStorage.getItem("userPassword");
+
+      const errorBox = document.getElementById("errorBox");
+
+      if (email === storedEmail && password === storedPassword) {
+        errorBox.textContent = "";
+        window.location.href = "uploadDoc.html"; 
+      }
+      else {
+        errorBox.textContent = "❌ Wrong email or password!";
+      }
+    });
+
+    // Toggle password visibility
+    function togglePassword(fieldId, icon) {
+      const input = document.getElementById(fieldId);
+      if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove("fa-eye");
+        icon.classList.add("fa-eye-slash");
+      } else {
+        input.type = "password";
+        icon.classList.remove("fa-eye-slash");
+        icon.classList.add("fa-eye");
+      }
+    }
   </script>
 </body>
 </html>
