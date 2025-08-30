@@ -1,4 +1,4 @@
-# backend.py
+# backend.py 
 import os
 import json
 import pytesseract
@@ -43,17 +43,35 @@ model = genai.GenerativeModel(MODEL_NAME)
 PROMPT_TEMPLATE = """
 You are an expert legal assistant. Analyze the following legal document and return ONLY valid JSON using EXACTLY these top-level keys:
 
-- "summary": (string) a concise summary of the document.
-- "extracted_terms": (array of strings) key legal terms and clauses.
-- "explanation": (string) explanation of key clauses in simple language.
-- "gaps": (array of strings) potential missing clauses, ambiguities, or risks.
+- "summary": (string) a concise summary of the document's purpose and key points.
+- "extracted_terms": (array of objects) key legal terms and clauses with detailed explanations. Each object should have:
+  {
+    "term": "clause name or legal term",
+    "content": "the actual clause text (if found)",
+    "explanation": "detailed explanation in simple language",
+    "importance": "High|Medium|Low",
+    "risk_level": "High|Medium|Low|None"
+  }
+- "explanation": (string) overall explanation of the document's key aspects in simple language.
+- "gaps": (array of objects) potential missing clauses, ambiguities, or risks. Each object should have:
+  {
+    "issue": "description of the gap or risk",
+    "explanation": "why this is important",
+    "recommendation": "suggested action or clause to add",
+    "severity": "High|Medium|Low"
+  }
 - "verdict": (string) either "Red Flag" or "No Major Red Flags".
+- "document_type": (string) type of legal document (e.g., "Employment Contract", "NDA", "Service Agreement").
+- "key_obligations": (array of strings) main obligations for each party.
+- "termination_clauses": (array of strings) how the agreement can be terminated.
+- "dispute_resolution": (string) how disputes are handled according to the document.
 
 IMPORTANT:
 1) Respond with ONLY valid JSON and nothing else.
 2) "verdict" must be a top-level key.
-3) If you cannot find terms/gaps, return empty arrays.
-4) Keep values concise.
+3) If you cannot find certain information, use empty arrays or "Not specified".
+4) For extracted_terms and gaps, provide detailed, actionable explanations.
+5) Focus on practical implications and risks for a layperson.
 """
 
 # ----------------- Utility functions -----------------
@@ -79,42 +97,75 @@ def repair_json(response_text: str) -> dict:
     return {"error": "Invalid JSON from model", "raw": response_text}
 
 def normalize_response(parsed: dict) -> dict:
+    """Enhanced normalization to handle the new detailed structure"""
     out = {}
-    out["summary"] = parsed.get("summary") if isinstance(parsed.get("summary"), str) else (str(parsed.get("summary")) if parsed.get("summary") is not None else "—")
-
-    terms = parsed.get("extracted_terms") or parsed.get("terms") or parsed.get("key_terms")
+    
+    # Basic fields
+    out["summary"] = parsed.get("summary", "—")
+    out["explanation"] = parsed.get("explanation", "—")
+    out["document_type"] = parsed.get("document_type", "Unknown")
+    out["dispute_resolution"] = parsed.get("dispute_resolution", "Not specified")
+    
+    # Handle extracted_terms - now expecting objects with detailed info
+    terms = parsed.get("extracted_terms", [])
     if isinstance(terms, list):
-        out["extracted_terms"] = [str(x) for x in terms]
-    elif isinstance(terms, str):
-        if "," in terms:
-            out["extracted_terms"] = [s.strip() for s in terms.split(",") if s.strip()]
-        elif terms.strip():
-            out["extracted_terms"] = [terms.strip()]
-        else:
-            out["extracted_terms"] = []
+        normalized_terms = []
+        for term in terms:
+            if isinstance(term, dict):
+                normalized_terms.append({
+                    "term": term.get("term", "Unknown term"),
+                    "content": term.get("content", ""),
+                    "explanation": term.get("explanation", "No explanation provided"),
+                    "importance": term.get("importance", "Medium"),
+                    "risk_level": term.get("risk_level", "None")
+                })
+            elif isinstance(term, str):
+                # Fallback for simple string terms
+                normalized_terms.append({
+                    "term": term,
+                    "content": "",
+                    "explanation": "Basic term identified",
+                    "importance": "Medium",
+                    "risk_level": "None"
+                })
+        out["extracted_terms"] = normalized_terms
     else:
         out["extracted_terms"] = []
-
-    out["explanation"] = parsed.get("explanation") if isinstance(parsed.get("explanation"), str) else (str(parsed.get("explanation")) if parsed.get("explanation") is not None else "—")
-
-    gaps = parsed.get("gaps") or parsed.get("missing_gaps")
+    
+    # Handle gaps - now expecting objects with detailed info
+    gaps = parsed.get("gaps", [])
     if isinstance(gaps, list):
-        out["gaps"] = [str(x) for x in gaps]
-    elif isinstance(gaps, str):
-        if "," in gaps:
-            out["gaps"] = [s.strip() for s in gaps.split(",") if s.strip()]
-        elif gaps.strip():
-            out["gaps"] = [gaps.strip()]
-        else:
-            out["gaps"] = []
+        normalized_gaps = []
+        for gap in gaps:
+            if isinstance(gap, dict):
+                normalized_gaps.append({
+                    "issue": gap.get("issue", "Unknown issue"),
+                    "explanation": gap.get("explanation", "No explanation provided"),
+                    "recommendation": gap.get("recommendation", "No recommendation provided"),
+                    "severity": gap.get("severity", "Medium")
+                })
+            elif isinstance(gap, str):
+                # Fallback for simple string gaps
+                normalized_gaps.append({
+                    "issue": gap,
+                    "explanation": "Potential issue identified",
+                    "recommendation": "Review with legal counsel",
+                    "severity": "Medium"
+                })
+        out["gaps"] = normalized_gaps
     else:
         out["gaps"] = []
-
+    
+    # Handle arrays
+    out["key_obligations"] = parsed.get("key_obligations", [])
+    out["termination_clauses"] = parsed.get("termination_clauses", [])
+    
+    # Verdict
     verdict = parsed.get("verdict")
     if isinstance(verdict, str):
         out["verdict"] = verdict
     else:
-        out["verdict"] = "No Major Red Flags" if not out["gaps"] else "Red Flag"
+        out["verdict"] = "Red Flag" if out["gaps"] else "No Major Red Flags"
 
     return out
 
@@ -139,7 +190,15 @@ def ocr_pdf_bytes(file_bytes: bytes) -> str:
                 text += page_text + "\n"
     return text.strip()
 
-# ----------------- Main endpoint -----------------
+# ----------------- Endpoints -----------------
+@app.get("/")
+async def root():
+    return {"message": "Legal Analyzer Backend is running!", "status": "OK", "endpoints": ["/analyze", "/docs"]}
+
+@app.get("/test")
+async def test_connection():
+    return {"message": "Backend connection successful!", "version": "1.0"}
+
 @app.post("/analyze")
 async def analyze_full_document(file: UploadFile = File(...)):
     if not file:
@@ -171,7 +230,11 @@ async def analyze_full_document(file: UploadFile = File(...)):
             "extracted_terms": [],
             "explanation": "No text extracted to analyze.",
             "gaps": [],
-            "verdict": "No Major Red Flags"
+            "verdict": "No Major Red Flags",
+            "document_type": "Unknown",
+            "key_obligations": [],
+            "termination_clauses": [],
+            "dispute_resolution": "Not specified"
         }
 
     MAX_CHARS = 120000
@@ -183,6 +246,7 @@ async def analyze_full_document(file: UploadFile = File(...)):
         response = await model.generate_content_async(prompt, generation_config=generation_config)
         raw = response.text or ""
         parsed = repair_json(raw)
+        
         if "error" in parsed:
             return {
                 "summary": parsed.get("raw", "")[:800],
@@ -190,6 +254,10 @@ async def analyze_full_document(file: UploadFile = File(...)):
                 "explanation": "Model returned malformed JSON; see raw for details.",
                 "gaps": [],
                 "verdict": "Unknown",
+                "document_type": "Unknown",
+                "key_obligations": [],
+                "termination_clauses": [],
+                "dispute_resolution": "Not specified",
                 "raw": parsed.get("raw")
             }
         return parsed
@@ -199,5 +267,31 @@ async def analyze_full_document(file: UploadFile = File(...)):
             "extracted_terms": [],
             "explanation": f"Model call failed: {str(e)}",
             "gaps": [],
-            "verdict": "Unknown"
+            "verdict": "Unknown",
+            "document_type": "Unknown",
+            "key_obligations": [],
+            "termination_clauses": [],
+            "dispute_resolution": "Not specified"
         }
+
+# Additional endpoint for clause-specific analysis
+@app.post("/explain-clause")
+async def explain_specific_clause(clause_text: str):
+    """Get detailed explanation for a specific clause"""
+    prompt = f"""
+    Explain this legal clause in simple, everyday language. Include:
+    1. What it means in practical terms
+    2. Why it's important
+    3. Potential risks or benefits
+    4. What someone should watch out for
+    
+    Clause: {clause_text}
+    
+    Respond in clear, conversational language as if explaining to a friend.
+    """
+    
+    try:
+        response = await model.generate_content_async(prompt)
+        return {"explanation": response.text}
+    except Exception as e:
+        return {"explanation": f"Error explaining clause: {str(e)}"}
