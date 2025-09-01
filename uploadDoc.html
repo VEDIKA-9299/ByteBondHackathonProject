@@ -15,6 +15,7 @@
       animation: gradientShift 20s ease infinite;
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       padding: 40px 20px;
@@ -35,6 +36,7 @@
       grid-template-columns: 1fr 1fr;
       gap: 40px;
       align-items: start;
+      flex-grow: 1;
     }
 
     .left { 
@@ -76,11 +78,19 @@
     .upload-box small { opacity: 0.8; color: #ffffff; }
     #fileInput { display: none; }
 
-    .buttons { display: flex; gap: 15px; }
+    .buttons { 
+      display: flex; 
+      justify-content: center;
+    }
     .btn {
-      flex: 1; padding: 15px; border: none; border-radius: 40px;
-      font-weight: bold; font-size: 15px; cursor: pointer;
-      transition: 0.4s ease; color: #fff;
+      padding: 15px 40px; 
+      border: none; 
+      border-radius: 40px;
+      font-weight: bold; 
+      font-size: 15px; 
+      cursor: pointer;
+      transition: 0.4s ease; 
+      color: #fff;
       background: linear-gradient(135deg, #2A4D9B, #2ECC71);
       letter-spacing: 0.5px;
     }
@@ -342,6 +352,25 @@
     .tab-content h4 {
       color: #333 !important;
     }
+    
+    /* Marquee Styles */
+    .disclaimer-marquee {
+        width: 100%;
+        color: #ffcc00; /* Yellow for a warning color */
+        padding: 10px 0;
+        text-align: center;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.4);
+        font-size: 0.9rem;
+        z-index: 1000;
+        backdrop-filter: blur(5px);
+    }
+    .disclaimer-marquee marquee {
+        font-weight: bold;
+        letter-spacing: 0.5px;
+    }
 
     @media(max-width: 1000px) {
       .container { grid-template-columns: 1fr; }
@@ -360,7 +389,6 @@
 </head>
 <body>
   <div class="container">
-    <!-- Left -->
     <div class="left">
       <h1>⚖️ Simplify <span>Legal Documents</span></h1>
       <div class="upload-box" onclick="document.getElementById('fileInput').click();">
@@ -370,17 +398,15 @@
       <input type="file" id="fileInput" accept=".doc,.docx,.pdf">
 
       <div class="buttons">
-        <button class="btn" onclick="generateSummary()">📋 Summarize</button>
         <button class="btn" onclick="analyzeDocument()">🔍 Analyze</button>
       </div>
     </div>
 
-    <!-- Right -->
     <div class="right">
       <div class="tabs">
         <div class="tab active" onclick="showTab(0)">📋 Document</div>
-        <div class="tab" onclick="showTab(1)">🔍 Clauses</div>
-        <div class="tab" onclick="showTab(2)">📊 Summary</div>
+        <div class="tab" onclick="showTab(1)">📊 Summary</div>
+        <div class="tab" onclick="showTab(2)">🔍 Clauses</div>
         <div class="tab" onclick="showTab(3)">⚠️ Gaps</div>
         <div class="indicator"></div>
       </div>
@@ -392,19 +418,25 @@
       </div>
       
       <div class="tab-content" id="tab1">
-        <p style="text-align:center; color:#888; padding:30px;">Click "Analyze" to detect clauses</p>
+        <div class="summary-section" id="summarySection">
+          <p style="text-align:center; color:#888;">Click "Analyze" to generate a summary</p>
+        </div>
       </div>
       
       <div class="tab-content" id="tab2">
-        <div class="summary-section" id="summarySection">
-          <p style="text-align:center; color:#888;">Click "Summarize" to generate a summary</p>
-        </div>
+        <p style="text-align:center; color:#888; padding:30px;">Click "Analyze" to detect clauses</p>
       </div>
       
       <div class="tab-content" id="tab3">
         <p style="text-align:center; color:#888; padding:30px;">Click "Analyze" to identify potential gaps</p>
       </div>
     </div>
+  </div>
+  
+  <div class="disclaimer-marquee">
+    <marquee behavior="scroll" direction="left" scrollamount="5">
+      ⚠ Disclaimer: This content is AI-generated. LegalDemyst simplifies property agreements and provides clause explanations. It is for informational purposes only and not legal advice. ⚠
+    </marquee>
   </div>
 
   <script>
@@ -490,12 +522,10 @@
     async function analyzeDocument() {
         if (!uploadedFile) { alert("Please upload a document first!"); return; }
         
-        // Show loading states
-        showTab(1);
-        const tab1 = document.getElementById('tab1');
-        const tab3 = document.getElementById('tab3');
-        tab1.innerHTML = "<p style='padding:20px; color:#2A4D9B;'>🔍 Analyzing clauses...</p>";
-        tab3.innerHTML = "<p style='padding:20px; color:#2A4D9B;'>🔍 Identifying gaps...</p>";
+        // Show loading states for all analysis tabs
+        document.getElementById('summarySection').innerHTML = "<p style='padding:20px; color:#2ECC71;'>📋 Generating summary...</p>";
+        document.getElementById('tab2').innerHTML = "<p style='padding:20px; color:#2A4D9B;'>🔍 Analyzing clauses...</p>";
+        document.getElementById('tab3').innerHTML = "<p style='padding:20px; color:#2A4D9B;'>🔍 Identifying gaps...</p>";
 
         const formData = new FormData();
         formData.append('file', uploadedFile);
@@ -505,92 +535,7 @@
             const data = await response.json();
             analysisData = data;
 
-            // Display clauses with detailed explanations
-            let clausesHTML = `
-                <div class="verdict-section ${data.verdict === 'Red Flag' ? 'verdict-warning' : 'verdict-safe'}">
-                    ${data.verdict === 'Red Flag' ? '⚠️' : '✅'} ${data.verdict}
-                </div>
-                
-                ${createRiskGuide()}
-                
-                <div class="info-grid">
-                    <div class="info-card">
-                        <div class="info-title">Document Type</div>
-                        <div style="color: #333;">${data.document_type}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-title">Dispute Resolution</div>
-                        <div style="color: #333;">${data.dispute_resolution}</div>
-                    </div>
-                </div>
-                
-                <h3 style="margin: 20px 0 15px 0; color: #2A4D9B;">📋 Key Legal Terms & Clauses</h3>
-            `;
-            
-            if (data.extracted_terms && data.extracted_terms.length > 0) {
-                data.extracted_terms.forEach(term => {
-                    clausesHTML += createClauseCard(term);
-                });
-            } else {
-                clausesHTML += '<p style="color: #666; font-style: italic;">No specific clauses identified.</p>';
-            }
-
-            // Add key obligations and termination clauses
-            if (data.key_obligations && data.key_obligations.length > 0) {
-                clausesHTML += `
-                    <h4 style="margin: 25px 0 10px 0; color: #2A4D9B;">📝 Key Obligations</h4>
-                    <ul style="margin-left: 20px; color: #333;">
-                        ${data.key_obligations.map(obligation => `<li style="margin: 8px 0; color: #333;">${obligation}</li>`).join('')}
-                    </ul>
-                `;
-            }
-
-            if (data.termination_clauses && data.termination_clauses.length > 0) {
-                clausesHTML += `
-                    <h4 style="margin: 25px 0 10px 0; color: #2A4D9B;">📚 Termination Clauses</h4>
-                    <ul style="margin-left: 20px; color: #333;">
-                        ${data.termination_clauses.map(clause => `<li style="margin: 8px 0; color: #333;">${clause}</li>`).join('')}
-                    </ul>
-                `;
-            }
-
-            tab1.innerHTML = clausesHTML;
-
-            // Display gaps and risks
-            let gapsHTML = `
-                <h3 style="margin: 0 0 20px 0; color: #e74c3c;">⚠️ Potential Issues & Missing Clauses</h3>
-            `;
-            
-            if (data.gaps && data.gaps.length > 0) {
-                data.gaps.forEach(gap => {
-                    gapsHTML += createGapCard(gap);
-                });
-            } else {
-                gapsHTML += '<div style="text-align: center; color: #2ecc71; padding: 30px;"><h4>✅ No Major Gaps Identified</h4><p style="color: #333;">This document appears to cover the essential legal bases.</p></div>';
-            }
-
-            tab3.innerHTML = gapsHTML;
-
-        } catch (err) {
-            tab1.innerHTML = `<p style='color:#e74c3c; padding:20px;'>Error analyzing document: ${err}</p>`;
-            tab3.innerHTML = `<p style='color:#e74c3c; padding:20px;'>Error analyzing document: ${err}</p>`;
-        }
-    }
-
-    async function generateSummary() {
-        if (!uploadedFile) { alert("Please upload a document first!"); return; }
-        showTab(2);
-        const summarySection = document.getElementById('summarySection');
-        summarySection.innerHTML = "<p style='padding:20px; color:#2ECC71;'>📋 Generating summary...</p>";
-
-        const formData = new FormData();
-        formData.append('file', uploadedFile);
-
-        try {
-            const response = await fetch(`${backendURL}/analyze`, { method: 'POST', body: formData });
-            const data = await response.json();
-            analysisData = data;
-            
+            // --- Populate the Summary Tab (tab1) ---
             let summaryHTML = `
                 <div class="verdict-section ${data.verdict === 'Red Flag' ? 'verdict-warning' : 'verdict-safe'}">
                     ${data.verdict === 'Red Flag' ? '⚠️' : '✅'} ${data.verdict}
@@ -632,45 +577,81 @@
                 `;
             }
 
-            summarySection.innerHTML = summaryHTML;
-        } catch (err) {
-            summarySection.innerHTML = `<p style='color:#e74c3c; padding:20px;'>Error generating summary: ${err}</p>`;
-        }
-    }
+            document.getElementById('summarySection').innerHTML = summaryHTML;
 
-    // Add clause explanation popup functionality
-    async function explainClause(clauseText) {
-        try {
-            const response = await fetch(`${backendURL}/explain-clause`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clause_text: clauseText })
-            });
-            const data = await response.json();
-            
-            // Create popup with detailed explanation
-            const popup = document.createElement('div');
-            popup.style.cssText = `
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                background: rgba(0,0,0,0.8); display: flex; justify-content: center;
-                align-items: center; z-index: 1000;
-            `;
-            popup.innerHTML = `
-                <div style="background: white; padding: 30px; border-radius: 15px; max-width: 600px; margin: 20px;">
-                    <h3 style="color: #2A4D9B; margin-bottom: 15px;">🔍 Detailed Clause Explanation</h3>
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-style: italic; color: #333;">
-                        "${clauseText}"
-                    </div>
-                    <div style="line-height: 1.6; color: #333;">${data.explanation}</div>
-                    <button onclick="this.parentElement.parentElement.remove()" 
-                            style="margin-top: 20px; padding: 10px 20px; background: #2ECC71; color: white; border: none; border-radius: 25px; cursor: pointer;">
-                        Close
-                    </button>
+
+            // --- Populate the Clauses Tab (tab2) ---
+            let clausesHTML = `
+                <div class="verdict-section ${data.verdict === 'Red Flag' ? 'verdict-warning' : 'verdict-safe'}">
+                    ${data.verdict === 'Red Flag' ? '⚠️' : '✅'} ${data.verdict}
                 </div>
+                
+                ${createRiskGuide()}
+                
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-title">Document Type</div>
+                        <div style="color: #333;">${data.document_type}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-title">Dispute Resolution</div>
+                        <div style="color: #333;">${data.dispute_resolution}</div>
+                    </div>
+                </div>
+                
+                <h3 style="margin: 20px 0 15px 0; color: #2A4D9B;">📋 Key Legal Terms & Clauses</h3>
             `;
-            document.body.appendChild(popup);
+            
+            if (data.extracted_terms && data.extracted_terms.length > 0) {
+                data.extracted_terms.forEach(term => {
+                    clausesHTML += createClauseCard(term);
+                });
+            } else {
+                clausesHTML += '<p style="color: #666; font-style: italic;">No specific clauses identified.</p>';
+            }
+
+            if (data.key_obligations && data.key_obligations.length > 0) {
+                clausesHTML += `
+                    <h4 style="margin: 25px 0 10px 0; color: #2A4D9B;">📝 Key Obligations</h4>
+                    <ul style="margin-left: 20px; color: #333;">
+                        ${data.key_obligations.map(obligation => `<li style="margin: 8px 0; color: #333;">${obligation}</li>`).join('')}
+                    </ul>
+                `;
+            }
+
+            if (data.termination_clauses && data.termination_clauses.length > 0) {
+                clausesHTML += `
+                    <h4 style="margin: 25px 0 10px 0; color: #2A4D9B;">📚 Termination Clauses</h4>
+                    <ul style="margin-left: 20px; color: #333;">
+                        ${data.termination_clauses.map(clause => `<li style="margin: 8px 0; color: #333;">${clause}</li>`).join('')}
+                    </ul>
+                `;
+            }
+
+            document.getElementById('tab2').innerHTML = clausesHTML;
+
+            // --- Populate the Gaps Tab (tab3) ---
+            let gapsHTML = `
+                <h3 style="margin: 0 0 20px 0; color: #e74c3c;">⚠️ Potential Issues & Missing Clauses</h3>
+            `;
+            
+            if (data.gaps && data.gaps.length > 0) {
+                data.gaps.forEach(gap => {
+                    gapsHTML += createGapCard(gap);
+                });
+            } else {
+                gapsHTML += '<div style="text-align: center; color: #2ecc71; padding: 30px;"><h4>✅ No Major Gaps Identified</h4><p style="color: #333;">This document appears to cover the essential legal bases.</p></div>';
+            }
+
+            document.getElementById('tab3').innerHTML = gapsHTML;
+            
+            // Switch to Summary tab after a successful analysis
+            showTab(1);
+
         } catch (err) {
-            alert('Error getting detailed explanation: ' + err);
+            document.getElementById('tab2').innerHTML = `<p style='color:#e74c3c; padding:20px;'>Error analyzing document: ${err}</p>`;
+            document.getElementById('summarySection').innerHTML = `<p style='color:#e74c3c; padding:20px;'>Error analyzing document: ${err}</p>`;
+            document.getElementById('tab3').innerHTML = `<p style='color:#e74c3c; padding:20px;'>Error analyzing document: ${err}</p>`;
         }
     }
   </script>
