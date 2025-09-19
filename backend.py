@@ -1,4 +1,4 @@
-# backend.py (Complete code with Q&A functionality added)
+# backend.py (Complete code with Q&A functionality + TXT/DOCX support)
 import os
 import json
 import pytesseract
@@ -11,7 +11,8 @@ from PIL import Image
 import tempfile
 from dotenv import load_dotenv
 import asyncio
-import uuid # ADDED for unique IDs
+import uuid
+from docx import Document  # ADDED for DOCX support
 
 # ----------------- Config / Setup -----------------
 tesseract_path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -25,14 +26,14 @@ pytesseract.pytesseract.tesseract_cmd = tesseract_path
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 if not api_key:
-    api_key = "AIzaSyB4h2wCQMaWl2WuHv1C1kJmsBIbNoSuOmY"  # Replace with your actual key
+    api_key = "AIzaSyB4h2wCQMaWl2WuHv1C1kJmsBIbNoSuOmY"  # placeholder
     print("Warning: GOOGLE_API_KEY not found; using placeholder. Replace before production.")
 genai.configure(api_key=api_key)
 
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:8001", "*"],  # adjust for production
+    allow_origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:8001", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,7 +42,7 @@ app.add_middleware(
 MODEL_NAME = "gemini-2.0-flash"
 model = genai.GenerativeModel(MODEL_NAME)
 
-# --- ADDED: In-memory cache to store document text for Q&A ---
+# --- In-memory cache to store document text for Q&A ---
 document_cache = {}
 
 PROMPT_TEMPLATE = """
@@ -101,19 +102,15 @@ def repair_json(response_text: str) -> dict:
     return {"error": "Invalid JSON from model", "raw": response_text}
 
 def normalize_response(parsed: dict) -> dict:
-    """Enhanced normalization to handle the new detailed structure"""
     out = {}
-    
-    # Basic fields
     out["summary"] = parsed.get("summary", "—")
     out["explanation"] = parsed.get("explanation", "—")
     out["document_type"] = parsed.get("document_type", "Unknown")
     out["dispute_resolution"] = parsed.get("dispute_resolution", "Not specified")
-    
-    # Handle extracted_terms - now expecting objects with detailed info
+
     terms = parsed.get("extracted_terms", [])
+    normalized_terms = []
     if isinstance(terms, list):
-        normalized_terms = []
         for term in terms:
             if isinstance(term, dict):
                 normalized_terms.append({
@@ -124,7 +121,6 @@ def normalize_response(parsed: dict) -> dict:
                     "risk_level": term.get("risk_level", "None")
                 })
             elif isinstance(term, str):
-                # Fallback for simple string terms
                 normalized_terms.append({
                     "term": term,
                     "content": "",
@@ -132,14 +128,11 @@ def normalize_response(parsed: dict) -> dict:
                     "importance": "Medium",
                     "risk_level": "None"
                 })
-        out["extracted_terms"] = normalized_terms
-    else:
-        out["extracted_terms"] = []
-    
-    # Handle gaps - now expecting objects with detailed info
+    out["extracted_terms"] = normalized_terms
+
     gaps = parsed.get("gaps", [])
+    normalized_gaps = []
     if isinstance(gaps, list):
-        normalized_gaps = []
         for gap in gaps:
             if isinstance(gap, dict):
                 normalized_gaps.append({
@@ -149,22 +142,17 @@ def normalize_response(parsed: dict) -> dict:
                     "severity": gap.get("severity", "Medium")
                 })
             elif isinstance(gap, str):
-                # Fallback for simple string gaps
                 normalized_gaps.append({
                     "issue": gap,
                     "explanation": "Potential issue identified",
                     "recommendation": "Review with legal counsel",
                     "severity": "Medium"
                 })
-        out["gaps"] = normalized_gaps
-    else:
-        out["gaps"] = []
-    
-    # Handle arrays
+    out["gaps"] = normalized_gaps
+
     out["key_obligations"] = parsed.get("key_obligations", [])
     out["termination_clauses"] = parsed.get("termination_clauses", [])
-    
-    # Verdict
+
     verdict = parsed.get("verdict")
     if isinstance(verdict, str):
         out["verdict"] = verdict
@@ -194,6 +182,14 @@ def ocr_pdf_bytes(file_bytes: bytes) -> str:
                 text += page_text + "\n"
     return text.strip()
 
+def extract_text_from_docx_bytes(file_bytes: bytes) -> str:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+        tmp.write(file_bytes)
+        tmp.flush()
+        doc = Document(tmp.name)
+        text = "\n".join([para.text for para in doc.paragraphs])
+    return text
+
 # ----------------- Endpoints -----------------
 @app.get("/")
 async def root():
@@ -210,23 +206,26 @@ async def analyze_full_document(file: UploadFile = File(...)):
 
     filename = file.filename or "document"
     suffix = filename.split(".")[-1].lower()
-    if suffix not in ("pdf", "png", "jpg", "jpeg"):
-        raise HTTPException(status_code=400, detail="Unsupported file type. Upload a PDF or image.")
+    if suffix not in ("pdf", "png", "jpg", "jpeg", "txt", "docx"):
+        raise HTTPException(status_code=400, detail="Unsupported file type. Upload PDF, image, TXT, or DOCX.")
 
     file_bytes = await file.read()
     extracted_text = ""
+
     if suffix == "pdf":
         extracted_text = extract_text_from_pdf_bytes(file_bytes)
-
-    if not extracted_text.strip():
-        if suffix == "pdf":
+        if not extracted_text.strip():
             extracted_text = ocr_pdf_bytes(file_bytes)
-        else:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{suffix}") as tmp:
-                tmp.write(file_bytes)
-                tmp.flush()
-                img = Image.open(tmp.name)
-                extracted_text = pytesseract.image_to_string(img)
+    elif suffix in ("png", "jpg", "jpeg"):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{suffix}") as tmp:
+            tmp.write(file_bytes)
+            tmp.flush()
+            img = Image.open(tmp.name)
+            extracted_text = pytesseract.image_to_string(img)
+    elif suffix == "txt":
+        extracted_text = file_bytes.decode("utf-8")
+    elif suffix == "docx":
+        extracted_text = extract_text_from_docx_bytes(file_bytes)
 
     if not extracted_text.strip():
         return {
@@ -250,7 +249,7 @@ async def analyze_full_document(file: UploadFile = File(...)):
         response = await model.generate_content_async(prompt, generation_config=generation_config)
         raw = response.text or ""
         parsed = repair_json(raw)
-        
+
         if "error" in parsed:
             return {
                 "summary": parsed.get("raw", "")[:800],
@@ -265,12 +264,10 @@ async def analyze_full_document(file: UploadFile = File(...)):
                 "raw": parsed.get("raw")
             }
 
-        # --- MODIFICATION: Store text and add ID for Q&A ---
         document_id = str(uuid.uuid4())
         document_cache[document_id] = extracted_text
         parsed["document_id"] = document_id
-        # --- END OF MODIFICATION ---
-        
+
         return parsed
     except Exception as e:
         return {
@@ -285,32 +282,26 @@ async def analyze_full_document(file: UploadFile = File(...)):
             "dispute_resolution": "Not specified"
         }
 
-# Additional endpoint for clause-specific analysis
+# ----------------- Clause Explanation & Q&A Endpoints (unchanged) -----------------
 @app.post("/explain-clause")
 async def explain_specific_clause(clause_text: str):
-    """Get detailed explanation for a specific clause"""
     prompt = f"""
     Explain this legal clause in simple, everyday language. Include:
     1. What it means in practical terms
     2. Why it's important
     3. Potential risks or benefits
     4. What someone should watch out for
-    
+
     Clause: {clause_text}
-    
+
     Respond in clear, conversational language as if explaining to a friend.
     """
-    
     try:
         response = await model.generate_content_async(prompt)
         return {"explanation": response.text}
     except Exception as e:
         return {"explanation": f"Error explaining clause: {str(e)}"}
 
-
-# --- ADDED: NEW ENDPOINTS FOR Q&A ---
-
-# Endpoint for Q&A
 @app.post("/qna")
 async def question_and_answer(data: dict = Body(...)):
     document_id = data.get("document_id")
@@ -318,7 +309,7 @@ async def question_and_answer(data: dict = Body(...)):
 
     if not document_id or not question:
         raise HTTPException(status_code=400, detail="document_id and question are required.")
-    
+
     document_text = document_cache.get(document_id)
     if not document_text:
         raise HTTPException(status_code=404, detail="Document not found or session expired.")
@@ -342,14 +333,12 @@ async def question_and_answer(data: dict = Body(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating answer: {str(e)}")
 
-
-# Endpoint for suggesting questions
 @app.post("/suggest-questions")
 async def suggest_questions(data: dict = Body(...)):
     document_id = data.get("document_id")
     if not document_id:
         raise HTTPException(status_code=400, detail="document_id is required.")
-        
+
     document_text = document_cache.get(document_id)
     if not document_text:
         raise HTTPException(status_code=404, detail="Document not found or session expired.")
@@ -368,13 +357,12 @@ async def suggest_questions(data: dict = Body(...)):
     try:
         generation_config = GenerationConfig(response_mime_type="application/json")
         response = await model.generate_content_async(prompt, generation_config=generation_config)
-        
+
         parsed_json = json.loads(response.text)
         if "questions" in parsed_json and isinstance(parsed_json["questions"], list):
             return parsed_json
         else:
             return {"questions": ["Could not generate suggestions."]}
-            
     except Exception as e:
         print(f"Error suggesting questions: {e}")
         return {"questions": ["What is the main purpose of this document?", "Who are the parties involved?"]}
