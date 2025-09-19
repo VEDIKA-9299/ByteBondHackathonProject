@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Legal Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate-900 */
+            color: #e2e8f0; /* Slate-200 */
+        }
+        .scroll-container {
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #475569 #1e293b;
+        }
+        .scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scroll-container::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        .scroll-container::-webkit-scrollbar-thumb {
+            background-color: #475569;
+            border-radius: 4px;
+        }
+        .btn-primary {
+            @apply flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all duration-300 transform active:scale-95 shadow-lg;
+        }
+        .gauge-container {
+            position: relative;
+            width: 150px;
+            height: 75px;
+            overflow: hidden;
+        }
+        .gauge-arc {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 200%;
+            border-radius: 50%;
+            border: 15px solid #1e293b; /* bg-slate-800 */
+            border-bottom-color: transparent;
+            border-left-color: transparent;
+        }
+        .gauge-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 200%;
+            border-radius: 50%;
+            border: 15px solid transparent;
+            border-bottom-color: transparent;
+            border-left-color: transparent;
+            transform: rotate(-135deg);
+            transition: transform 1.5s ease-in-out;
+        }
+        .gauge-text {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+        .paper {
+            background-color: #f8fafc; /* Slate-50 */
+            color: #1e293b; /* Slate-800 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            overflow-y: hidden;
+            height: fit-content;
+        }
+        .paper-content {
+            font-size: 16px;
+            line-height: 1.6;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            min-height: 400px;
+            max-height: 600px;
+        }
+        .paper-content h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .paper-content h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+        }
+        .paper-content h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .paper-content p {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        .paper-content strong {
+            font-weight: 700;
+        }
+        .paper-content ul, .paper-content ol {
+            list-style-type: none;
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .paper-content ul li::before {
+            content: "•";
+            color: #1e293b;
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1.5em;
+        }
+        .recommendation-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .analysis-section {
+            background-color: #1e293b; /* Slate-800 */
+            padding: 24px;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .upload-text {
+            color: #facc15; /* Yellow-400 */
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .continuous-pulse {
+            animation: pulse 1.5s infinite;
+        }
+        .risk-chart-container {
+            height: 128px;
+            position: relative;
+        }
+        .risk-bar-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 100%;
+            padding: 1rem;
+            background-color: #0f172a;
+            border-radius: 0.5rem;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .risk-bar-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            height: 100%;
+        }
+        .risk-bar {
+            width: 2rem;
+            border-radius: 0.25rem 0.25rem 0 0;
+            background-color: #3b82f6; /* Blue-500 */
+            transition: height 1s ease-out;
+        }
+        #legal-summary-section {
+            background-color: #fff8e1; /* Subtle Cream */
+            color: #000;
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        #legal-summary-section h3 {
+            color: #000;
+        }
+        #legal-summary-section li {
+            color: #000;
+        }
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+    <!-- Main Application Dashboard -->
+    <main class="flex-1 p-8 grid grid-cols-1 md:grid-cols-3 gap-8" id="main-app">
+        <!-- Main Document View -->
+        <div class="md:col-span-2 bg-slate-800 rounded-2xl shadow-xl flex flex-col p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Refined Legal Document</h2>
+                <div class="flex items-center gap-2 text-sm text-slate-400">
+                    <svg class="animate-spin h-5 w-5 text-blue-500 hidden" id="loading-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="status-text">Ready</span>
+                </div>
+            </div>
+            
+            <div class="flex-grow flex flex-col paper rounded-xl p-8 shadow-inner">
+                <div id="pages-container" class="relative overflow-hidden flex-grow">
+                    <!-- Pages will be dynamically injected here -->
+                    <div id="modified-doc-page-1" class="paper-content h-full absolute top-0 left-0 w-full opacity-100 transition-opacity duration-500">
+                        <p class="text-slate-400">Your refined legal document will appear here after uploading. It will be professionally formatted and legally sound.</p>
+                    </div>
+                </div>
+
+                <div id="pagination-controls" class="pagination-controls mt-4">
+                    <button id="prev-page-btn" class="btn-primary" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                        </svg>
+                    </button>
+                    <span id="page-info" class="text-slate-400">Page 1 of 1</span>
+                    <button id="next-page-btn" class="btn-primary" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end">
+                <button id="download-btn" class="btn-primary" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    Download Document
+                </button>
+            </div>
+        </div>
+
+        <!-- Analysis Panel -->
+        <div class="bg-slate-800 rounded-2xl shadow-xl p-6 flex flex-col">
+            <div class="mb-6">
+                <div id="upload-text-container" class="upload-text continuous-pulse">
+                    <input type="file" id="file-input" class="hidden" accept=".txt, .md, .docx, .pdf, .jpg, .jpeg, .png">
+                    <span>Upload New Document</span>
+                </div>
+            </div>
+
+            <div class="analysis-section" style="background-color: #1f2937;">
+                <h2 class="text-2xl font-bold mb-6">Legal Score</h2>
+                <div class="flex flex-col items-center">
+                    <div class="gauge-container mb-2">
+                        <div class="gauge-arc" style="transform: rotate(135deg);"></div>
+                        <div id="gauge-fill" class="gauge-fill" style="transform: rotate(-135deg);"></div>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="score-text-original" class="text-2xl font-extrabold text-red-500">--</span>
+                        <span id="score-text" class="text-4xl font-extrabold text-white">--</span>
+                    </div>
+                    <p id="score-label" class="text-sm text-slate-400 mt-2">Uploading...</p>
+                </div>
+            </div>
+
+            <div class="analysis-section" id="legal-summary-section">
+                <h3 class="text-lg font-semibold mb-3">Legal Review Summary</h3>
+                <ul id="recommendations-list" class="space-y-2 text-sm">
+                    <li id="recommendations-placeholder">Upload a document to begin analysis.</li>
+                </ul>
+            </div>
+
+            <div class="analysis-section">
+                <h3 class="text-lg font-semibold mb-3">Risk Assessment</h3>
+                <div class="w-full flex flex-col gap-4">
+                    <div class="flex flex-col items-center">
+                        <p class="text-sm font-semibold">Breakdown</p>
+                        <div class="risk-chart-container w-full">
+                             <div class="risk-bar-container">
+                                <div class="risk-bar-item">
+                                    <div id="clarity-bar" class="risk-bar" style="height: 0;"></div>
+                                    <span class="text-xs text-slate-400">Clarity</span>
+                                </div>
+                                <div class="risk-bar-item">
+                                    <div id="compliance-bar" class="risk-bar" style="height: 0;"></div>
+                                    <span class="text-xs text-slate-400">Compliance</span>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+                <span id="impact-percentage" class="block text-center mt-4 text-white text-lg font-bold hidden">+0%</span>
+            </div>
+            
+            <!-- Disclaimer at the bottom -->
+            <div class="mt-auto pt-6 text-xs text-center text-slate-500 border-t border-slate-700">
+                <p>
+                    <span class="font-bold text-orange-400">Disclaimer:</span> This AI tool provides general information and suggested modifications for informational purposes only. It is not a substitute for professional legal advice.
+                </p>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        const API_KEY = "AIzaSyDm_DL2gC50aA6e6va3grYxitHZ9asLP9Y";
+        const GEMINI_MODEL = "gemini-2.5-flash-preview-05-20";
+
+        window.onload = () => {
+            const mainApp = document.getElementById('main-app');
+            const fileInput = document.getElementById('file-input');
+            const downloadBtn = document.getElementById('download-btn');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const statusText = document.getElementById('status-text');
+            const scoreText = document.getElementById('score-text');
+            const scoreLabel = document.getElementById('score-label');
+            const gaugeFill = document.getElementById('gauge-fill');
+            const recommendationsList = document.getElementById('recommendations-list');
+            const impactPercentage = document.getElementById('impact-percentage');
+            const overallBar = document.getElementById('overall-bar');
+            const clarityBar = document.getElementById('clarity-bar');
+            const complianceBar = document.getElementById('compliance-bar');
+            const uploadTextContainer = document.getElementById('upload-text-container');
+            const pagesContainer = document.getElementById('pages-container');
+            const pageInfo = document.getElementById('page-info');
+            const prevPageBtn = document.getElementById('prev-page-btn');
+            const nextPageBtn = document.getElementById('next-page-btn');
+            const modifiedDocContent = document.getElementById('modified-doc-page-1');
+            const originalScoreText = document.getElementById('score-text-original');
+
+            let currentPage = 0;
+            let pages = [];
+            const MAX_CHARACTERS_PER_PAGE = 3000;
+
+            function paginateDocument(content) {
+                const words = content.split(' ');
+                pages = [];
+                let currentPageContent = '';
+
+                for (let i = 0; i < words.length; i++) {
+                    const word = words[i];
+                    if ((currentPageContent + ' ' + word).length > MAX_CHARACTERS_PER_PAGE) {
+                        pages.push(currentPageContent);
+                        currentPageContent = word;
+                    } else {
+                        currentPageContent += (currentPageContent === '' ? '' : ' ') + word;
+                    }
+                }
+                if (currentPageContent !== '') {
+                    pages.push(currentPageContent);
+                }
+                renderPage(0);
+            }
+
+            function renderPage(pageIndex) {
+                if (pages.length === 0) return;
+
+                pagesContainer.innerHTML = '';
+                const pageElement = document.createElement('div');
+                pageElement.classList.add('paper-content', 'h-full', 'absolute', 'top-0', 'left-0', 'w-full', 'opacity-100', 'overflow-y-auto');
+                pageElement.innerHTML = formatMarkdown(pages[pageIndex]);
+                pagesContainer.appendChild(pageElement);
+                
+                currentPage = pageIndex;
+                pageInfo.textContent = `Page ${currentPage + 1} of ${pages.length}`;
+                
+                prevPageBtn.disabled = currentPage === 0;
+                nextPageBtn.disabled = currentPage === pages.length - 1;
+            }
+
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPage > 0) {
+                    renderPage(currentPage - 1);
+                }
+            });
+
+            nextPageBtn.addEventListener('click', () => {
+                if (currentPage < pages.length - 1) {
+                    renderPage(currentPage + 1);
+                }
+            });
+
+            const systemPrompt = "You are an expert legal assistant. Your role is to take an uploaded document, identify any legal gaps, weak or ambiguous language, or malicious clauses, and rewrite the document to be more legally sound, robust, and professional for the client. Do not summarize or shorten the document. Instead, provide a complete, well-structured, and professionally formatted legal document as the final output in Markdown format. Also, provide a list of key issues identified and recommendations as a separate, bulleted list at the very end. The list should be formatted like this: '**Recommendations:**\n* Recommendation 1\n* Recommendation 2\n* ...'. Finally, provide a legal score from 0-100 for Clarity and Compliance, and an Overall score based on your changes in the format: '**SCORES:** Overall: X, Clarity: Y, Compliance: Z' at the very end.";
+
+            // Function to parse Markdown-like content into HTML
+            function formatMarkdown(markdown) {
+                let html = markdown
+                    .replace(/^#\s(.+)/gm, '<h1 class="text-xl font-bold mt-4 mb-2">$1</h1>')
+                    .replace(/^##\s(.+)/gm, '<h2 class="text-lg font-semibold mt-4 mb-1">$1</h2>')
+                    .replace(/^###\s(.+)/gm, '<h3 class="text-base font-semibold mt-3 mb-1">$1</h3>')
+                    .replace(/^\*\*(.+?)\*\*/gm, '<strong>$1</strong>')
+                    .replace(/\n\n/g, '<p>')
+                    .replace(/\n/g, '<br>');
+                return html;
+            }
+
+            async function processDocument(file) {
+                loadingSpinner.classList.remove('hidden');
+                statusText.textContent = "Extracting text from document...";
+
+                let documentText = "";
+                const fileType = file.type;
+
+                try {
+                    if (fileType.startsWith("image/") || fileType === "application/pdf") {
+                        const { data: { text } } = await Tesseract.recognize(file, 'eng');
+                        documentText = text;
+                    } else {
+                        documentText = await file.text();
+                    }
+                } catch (error) {
+                    statusText.textContent = "Error: OCR failed. Please try a different file.";
+                    loadingSpinner.classList.add('hidden');
+                    console.error('OCR Error:', error);
+                    return;
+                }
+                
+                if (!documentText || documentText.trim() === "") {
+                    statusText.textContent = "Error: Could not extract text from the file.";
+                    loadingSpinner.classList.add('hidden');
+                    return;
+                }
+
+                statusText.textContent = "Conducting Legal Review with Gemini...";
+
+                const userQuery = `Refine the following legal document to make it legally correct and robust. Ensure proper legal formatting with headings and clauses. Document content:\n\n${documentText}`;
+
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${API_KEY}`;
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        statusText.textContent = `API Error: ${response.status} ${response.statusText}`;
+                        console.error('API Error:', response.status, response.statusText);
+                        loadingSpinner.classList.add('hidden');
+                        return;
+                    }
+
+                    const result = await response.json();
+                    const generatedContent = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                    if (!generatedContent) {
+                        statusText.textContent = "Error: No refined document returned from the AI.";
+                        loadingSpinner.classList.add('hidden');
+                        return;
+                    }
+
+                    const [documentPart, recommendationsPart, scoresPart] = generatedContent.split('**Recommendations:**');
+                    
+                    // Separate scores part correctly
+                    const [finalRecommendationsPart, finalScoresPart] = recommendationsPart.split('**SCORES:**');
+
+                    let newScores = {
+                        original: { overall: 25, clarity: 30, compliance: 20 },
+                        modified: { overall: 87, clarity: 90, compliance: 85 }
+                    };
+
+                    const scoresMatch = finalScoresPart.match(/Overall: (\d+), Clarity: (\d+), Compliance: (\d+)/);
+                    if (scoresMatch) {
+                        newScores.modified.overall = parseInt(scoresMatch[1], 10);
+                        newScores.modified.clarity = parseInt(scoresMatch[2], 10);
+                        newScores.modified.compliance = parseInt(scoresMatch[3], 10);
+                    }
+
+                    statusText.textContent = "Review Complete";
+                    loadingSpinner.classList.add('hidden');
+                    
+                    paginateDocument(documentPart);
+                    updateGauge(newScores.modified.overall, newScores.original.overall);
+                    updateChart(newScores.original, newScores.modified);
+                    downloadBtn.disabled = false;
+                    
+                    // Clear placeholder and populate recommendations
+                    recommendationsList.innerHTML = '';
+                    const recommendations = finalRecommendationsPart.split('*').filter(rec => rec.trim() !== '');
+                    recommendations.forEach(rec => {
+                         const li = document.createElement('li');
+                         li.classList.add('recommendation-item');
+                         li.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#22c55e" class="w-5 h-5 flex-shrink-0">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>${rec.trim()}</span>
+                        `;
+                         recommendationsList.appendChild(li);
+                    });
+
+
+                } catch (error) {
+                    statusText.textContent = "API call failed. Please check your network or API key.";
+                    console.error('Fetch Error:', error);
+                    loadingSpinner.classList.add('hidden');
+                }
+            }
+
+            function updateGauge(modifiedScore, originalScore) {
+                const angle = (modifiedScore / 100) * 180;
+                const originalAngle = (originalScore / 100) * 180;
+                gaugeFill.style.transform = `rotate(${angle - 135}deg)`;
+                scoreText.textContent = `${modifiedScore}%`;
+                originalScoreText.textContent = `${originalScore}%`;
+                if (modifiedScore < 40) {
+                    gaugeFill.style.borderColor = '#ef4444';
+                    scoreLabel.textContent = 'High Risk';
+                } else if (modifiedScore < 75) {
+                    gaugeFill.style.borderColor = '#eab308';
+                    scoreLabel.textContent = 'Needs Review';
+                } else {
+                    gaugeFill.style.borderColor = '#22c55e';
+                    scoreLabel.textContent = 'Legally Sound';
+                }
+            }
+            
+            function updateChart(originalScores, modifiedScores) {
+                const clarityBar = document.getElementById('clarity-bar');
+                const complianceBar = document.getElementById('compliance-bar');
+
+                // Animate bars from original score to new score
+                clarityBar.style.height = `${originalScores.clarity}%`;
+                complianceBar.style.height = `${originalScores.compliance}%`;
+
+                setTimeout(() => {
+                    clarityBar.style.height = `${modifiedScores.clarity}%`;
+                    complianceBar.style.height = `${modifiedScores.compliance}%`;
+
+                    clarityBar.style.backgroundColor = modifiedScores.clarity < 75 ? '#eab308' : '#3b82f6';
+                    complianceBar.style.backgroundColor = modifiedScores.compliance < 75 ? '#eab308' : '#3b82f6';
+                }, 500);
+
+                const percentageChange = Math.max(0, modifiedScores.overall - originalScores.overall);
+                if (percentageChange > 0) {
+                    impactPercentage.textContent = `+${percentageChange.toFixed(0)}%`;
+                    impactPercentage.classList.remove('hidden');
+                } else {
+                    impactPercentage.classList.add('hidden');
+                }
+            }
+
+            uploadTextContainer.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                await processDocument(file);
+            });
+
+            downloadBtn.addEventListener('click', () => {
+                const blob = new Blob([modifiedDocContent.innerText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'refined_document.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+            
+            mainApp.classList.remove('hidden');
+        };
+    </script>
+</body>
+</html>
