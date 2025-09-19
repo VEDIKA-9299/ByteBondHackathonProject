@@ -431,7 +431,7 @@
       position: absolute; 
       bottom: 0; 
       height: 4px; 
-      width: 20%; /* MODIFIED for 5 tabs */
+      width: 20%; 
       background: linear-gradient(45deg, var(--primary-blue), var(--primary-green));
       transition: left 0.4s ease; 
       left: 0;
@@ -793,6 +793,34 @@
     .suggested-questions .chip { display: inline-block; background: rgba(46, 204, 113, 0.1); color: var(--primary-blue); padding: var(--space-sm) var(--space-lg); border-radius: 25px; font-size: var(--text-xs); font-weight: 600; cursor: pointer; transition: all 0.3s ease; border: 1px solid transparent; margin: var(--space-xs); }
     .suggested-questions .chip:hover { background: rgba(46, 204, 113, 0.2); border-color: var(--primary-green); transform: translateY(-2px); }
 
+    /* --- ADDED: Styles for Inline Risk Warning Card --- */
+    .risk-summary-card {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xl);
+        background: linear-gradient(135deg, #fff5f5, #ffffff);
+        border: 2px solid var(--danger-red);
+        padding: var(--space-2xl);
+        margin-top: var(--space-2xl);
+        border-radius: var(--border-radius-lg);
+        box-shadow: 0 4px 15px rgba(231, 76, 60, 0.15);
+    }
+    .risk-icon {
+        font-size: var(--text-4xl);
+    }
+    .risk-content {
+        flex: 1;
+    }
+    .risk-title {
+        color: var(--danger-red);
+        margin-bottom: var(--space-sm);
+    }
+    .risk-text {
+        color: var(--text-dark-secondary);
+        line-height: 1.6;
+        margin-bottom: var(--space-lg);
+    }
+
   </style>
 </head>
 <body>
@@ -813,7 +841,7 @@
     </div>
   </nav>
 
-  <div class="main-container">
+  <div class="main-container" id="analysisContainer">
     <div class="container">
       <div class="left">
         
@@ -827,10 +855,10 @@
           <div class="upload-content">
             <div class="upload-icon">📄</div>
             <p class="upload-text">Drop your document here, or <span style="color: var(--primary-green); text-decoration: underline; cursor: pointer;">browse</span></p>
-            <small class="upload-subtext">Supports PDF, DOC, DOCX, TXT, PNG, JPG files up to 10MB</small>
+            <small class="upload-subtext">Supports PDF, DOC, DOCX, TXT files up to 10MB</small>
           </div>
         </div>
-        <input type="file" id="fileInput" accept=".doc,.docx,.pdf,.txt,.png,.jpg,.jpeg">
+        <input type="file" id="fileInput" accept=".doc,.docx,.pdf,.txt">
 
         <div class="buttons">
           <button class="btn btn-secondary" onclick="analyzeDocument()">
@@ -917,6 +945,25 @@
       </div>
     </div>
   </div>
+
+  <div class="main-container" id="nextStepsContainer" style="display: none;">
+      <div class="container" style="grid-template-columns: 1fr;">
+          <div class="left" style="align-items: center;">
+              <h1 class="hero-title heading">Choose Your Next Step</h1>
+              <p class="hero-description">
+                  Based on the analysis, you can choose to generate a revised document or consult with a legal professional.
+              </p>
+              <div class="buttons" style="flex-direction: column; align-items: center; gap: var(--space-xl);">
+                  <button class="btn btn-primary" style="width: 100%; max-width: 400px;" onclick="alert('Document generation feature is under development.')">
+                      <span>📝</span> Generate Revised Document
+                  </button>
+                  <button class="btn btn-secondary" style="width: 100%; max-width: 400px;" onclick="alert('Connecting you with a legal expert...')">
+                      <span>🧑‍⚖️</span> Seek a Lawyer
+                  </button>
+              </div>
+          </div>
+      </div>
+  </div>
   
   <div class="disclaimer">
     <div class="disclaimer-text">
@@ -973,7 +1020,6 @@
       }
     });
 
-    // MODIFIED: Function to handle 5 tabs
     function showTab(index) {
       const tabs = document.querySelectorAll('.tab');
       const contents = document.querySelectorAll('.tab-content');
@@ -1051,7 +1097,6 @@
         return; 
       }
       
-      // Show loading states for all analysis tabs
       const loadingHTML = `
         <div class="empty-state" style="color: var(--primary-green);">
           <div class="loading-spinner" style="margin: 0 auto var(--space-lg);"></div>
@@ -1100,15 +1145,7 @@
               <p style="line-height: 1.6; color: var(--text-dark);">${data.summary || 'No summary available'}</p>
             </div>
           </div>
-          
-          <div class="section">
-            <h3 class="section-header">🔍 Detailed Explanation</h3>
-            <div class="content-card">
-              <p style="line-height: 1.6; color: var(--text-dark);">${data.explanation || 'No detailed explanation available'}</p>
-            </div>
-          </div>
         `;
-
         if (data.key_obligations && data.key_obligations.length > 0) {
           summaryHTML += `
             <div class="section">
@@ -1121,46 +1158,10 @@
             </div>
           `;
         }
-
-        if (data.termination_clauses && data.termination_clauses.length > 0) {
-          summaryHTML += `
-            <div class="section">
-              <h4 class="section-header">🔚 How to End This Agreement</h4>
-              <div class="content-card" style="background: linear-gradient(135deg, #f8d7da, #ffffff); border-left: 4px solid var(--danger-red);">
-                <ul style="margin-left: var(--space-lg);">
-                  ${data.termination_clauses.map(clause => `<li style="margin: var(--space-sm) 0; color: var(--text-dark); line-height: 1.5;">${clause}</li>`).join('')}
-                </ul>
-              </div>
-            </div>
-          `;
-        }
-
         document.getElementById('summarySection').innerHTML = summaryHTML;
 
         // Populate Clauses Tab
-        let clausesHTML = `
-          <div class="verdict-section ${data.verdict === 'Red Flag' ? 'verdict-warning' : 'verdict-safe'}">
-            ${data.verdict === 'Red Flag' ? '⚠️' : '✅'} ${data.verdict}
-          </div>
-          
-          ${createRiskGuide()}
-          
-          <div class="info-grid">
-            <div class="info-card">
-              <div class="info-title">Document Type</div>
-              <div class="info-value">${data.document_type || 'Unknown'}</div>
-            </div>
-            <div class="info-card">
-              <div class="info-title">Dispute Resolution</div>
-              <div class="info-value">${data.dispute_resolution || 'Not specified'}</div>
-            </div>
-          </div>
-          
-          <div class="section">
-            <h3 class="section-header">📋 Key Legal Terms & Clauses</h3>
-          </div>
-        `;
-        
+        let clausesHTML = `${createRiskGuide()}`;
         if (data.extracted_terms && data.extracted_terms.length > 0) {
           data.extracted_terms.forEach(term => {
             clausesHTML += createClauseCard(term);
@@ -1168,44 +1169,38 @@
         } else {
           clausesHTML += '<div class="empty-state"><p class="empty-description">No specific clauses identified.</p></div>';
         }
-
         document.getElementById('tab2').innerHTML = clausesHTML;
 
         // Populate Gaps Tab
-        let gapsHTML = `
-          <div class="section">
-            <h3 class="section-header" style="color: var(--danger-red);">⚠️ Potential Issues & Missing Clauses</h3>
-          </div>
-        `;
-        
+        let gapsHTML = `<div class="section"><h3 class="section-header" style="color: var(--danger-red);">⚠️ Potential Issues & Missing Clauses</h3></div>`;
         if (data.gaps && data.gaps.length > 0) {
           data.gaps.forEach(gap => {
             gapsHTML += createGapCard(gap);
           });
-        } else {
+
+          // --- MODIFIED: Append the inline warning card at the end of the gaps list ---
           gapsHTML += `
-            <div class="empty-state">
-              <div class="empty-icon" style="color: var(--primary-green);">✅</div>
-              <h4 class="empty-title" style="color: var(--primary-green);">No Major Gaps Identified</h4>
-              <p class="empty-description">This document appears to cover the essential legal bases.</p>
+            <div class="risk-summary-card">
+              <div class="risk-icon">⚠️</div>
+              <div class="risk-content">
+                <h3 class="risk-title heading">Significant Risks Identified</h3>
+                <p class="risk-text">Based on the gaps found, we recommend taking further action to protect your interests.</p>
+                <button class="btn btn-primary" onclick="proceedToNextSteps()">Proceed to Resolution Options</button>
+              </div>
             </div>
           `;
+        } else {
+          gapsHTML += `<div class="empty-state"><div class="empty-icon" style="color: var(--primary-green);">✅</div><h4 class="empty-title" style="color: var(--primary-green);">No Major Gaps Identified</h4><p class="empty-description">This document appears to cover the essential legal bases.</p></div>`;
         }
-
         document.getElementById('tab3').innerHTML = gapsHTML;
         
-        // MODIFIED: Fetch suggested questions after analysis
         if (analysisData.document_id) {
             fetchSuggestedQuestions(analysisData.document_id);
         }
 
-        // Switch to Summary tab after successful analysis
         showTab(1);
-
-        // Remove pulse animation from analyze button
         const analyzeBtn = document.querySelector('.btn-secondary');
         analyzeBtn.classList.remove('animate-pulse');
-
       } catch (err) {
         console.error('Analysis error:', err);
         const errorHTML = `
@@ -1213,48 +1208,23 @@
             <div class="empty-icon">❌</div>
             <p class="empty-title">Analysis Failed</p>
             <p class="empty-description">Error: ${err.message || 'Connection failed - make sure the backend is running'}</p>
-            <p class="text-xs" style="margin-top: var(--space-sm); opacity: 0.6;">Check that the backend server is running on ${backendURL}</p>
           </div>
         `;
-        
         document.getElementById('summarySection').innerHTML = errorHTML;
         document.getElementById('tab2').innerHTML = errorHTML;
         document.getElementById('tab3').innerHTML = errorHTML;
       }
     }
 
-    // Add ripple effects to buttons
-    document.querySelectorAll('.btn').forEach(button => {
-      button.addEventListener('click', function(e) {
-        const rect = this.getBoundingClientRect();
-        const ripple = document.createElement('div');
-        const size = Math.max(rect.width, rect.height);
-        const x = e.clientX - rect.left - size / 2;
-        const y = e.clientY - rect.top - size / 2;
-        
-        ripple.style.width = ripple.style.height = size + 'px';
-        ripple.style.left = x + 'px';
-        ripple.style.top = y + 'px';
-        ripple.style.position = 'absolute';
-        ripple.style.borderRadius = '50%';
-        ripple.style.background = 'rgba(255, 255, 255, 0.3)';
-        ripple.style.transform = 'scale(0)';
-        ripple.style.animation = 'ripple 0.6s linear';
-        ripple.style.pointerEvents = 'none';
-        
-        this.style.position = 'relative';
-        this.style.overflow = 'hidden';
-        this.appendChild(ripple);
-        
-        setTimeout(() => {
-          ripple.remove();
-        }, 600);
-      });
-    });
+    // --- ADDED: LOGIC FOR NEXT STEPS ---
 
-    // --- ADDED: ALL JAVASCRIPT LOGIC FOR Q&A ---
+    function proceedToNextSteps() {
+        document.getElementById('analysisContainer').style.display = 'none';
+        document.getElementById('nextStepsContainer').style.display = 'flex';
+    }
 
-    // Fetches suggested questions from the backend
+    // --- JAVASCRIPT LOGIC FOR Q&A ---
+
     async function fetchSuggestedQuestions(documentId) {
         try {
             const response = await fetch(`${backendURL}/suggest-questions`, {
@@ -1271,7 +1241,6 @@
         }
     }
 
-    // Creates the clickable "chip" buttons for suggested questions
     function populateSuggestedQuestions(questions) {
         const container = document.getElementById('suggestedQuestions');
         if (!questions || questions.length === 0) {
@@ -1286,13 +1255,11 @@
         container.innerHTML = html;
     }
 
-    // Called when a user clicks a suggested question chip
     function askSuggested(question) {
         document.getElementById('qnaInput').value = question;
         handleAskQuestion();
     }
 
-    // Main function to handle asking a question
     async function handleAskQuestion() {
         const qnaInput = document.getElementById('qnaInput');
         const question = qnaInput.value.trim();
@@ -1319,7 +1286,7 @@
             }
             const result = await response.json();
             answerDiv.innerText = result.answer;
-            qnaInput.value = ''; // Clear input after asking
+            qnaInput.value = ''; 
         } catch (error) {
             answerDiv.innerText = `Sorry, an error occurred: ${error.message}`;
             console.error("Q&A Error:", error);
@@ -1329,7 +1296,6 @@
         }
     }
 
-    // Add event listeners for the Q&A button and input field
     document.getElementById('askBtn').addEventListener('click', handleAskQuestion);
     document.getElementById('qnaInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -1337,7 +1303,6 @@
             handleAskQuestion();
         }
     });
-
   </script>
 </body>
 </html>
