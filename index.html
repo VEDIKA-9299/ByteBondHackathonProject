@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalDmyst - Demystifying Legal Documents with AI</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:600,800|Lato:400,500" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background: linear-gradient(135deg, #141E30, #243B55);
+            background-size: 300% 300%;
+            animation: gradientShift 20s ease infinite;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(20, 30, 48, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(46, 204, 113, 0.2);
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 24px;
+            color: #2ECC71;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #2A4D9B, #2ECC71);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 40px;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 8px 0;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-menu a:hover {
+            color: #2ECC71;
+            border-bottom-color: #2ECC71;
+        }
+
+        .nav-button {
+            background: linear-gradient(45deg, #2A4D9B, #2ECC71);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.5);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 100px 0 50px;
+            position: relative;
+        }
+
+        .hero-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 50px;
+        }
+
+        .hero-content {
+            max-width: 800px;
+        }
+
+        .hero-badge {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            color: #2ECC71;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            display: inline-block;
+        }
+
+        .hero-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #ffffff, #2ECC71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-description {
+            font-size: 1.3rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 40px;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 25px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .primary-btn {
+            background: linear-gradient(45deg, #2A4D9B, #2ECC71);
+            color: white;
+            padding: 18px 35px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 16px;
+            transition: all 0.4s ease;
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(46, 204, 113, 0.5);
+        }
+
+        .secondary-btn {
+            background: transparent;
+            color: white;
+            padding: 18px 35px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.4s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #2ECC71;
+            transform: translateY(-2px);
+        }
+
+        /* Interactive Demo Card */
+        .demo-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .demo-header {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 25px;
+        }
+
+        .window-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ff5f57; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #28ca42; }
+
+        .analysis-results {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .result-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 20px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .result-item:hover {
+            transform: translateX(8px);
+        }
+
+        .result-high {
+            background: linear-gradient(135deg, #fff5f5, #fed7d7);
+            border-left: 5px solid #e53e3e;
+        }
+
+        .result-medium {
+            background: linear-gradient(135deg, #fffaf0, #feebc8);
+            border-left: 5px solid #dd6b20;
+        }
+
+        .result-good {
+            background: linear-gradient(135deg, #f0fff4, #c6f6d5);
+            border-left: 5px solid #38a169;
+        }
+
+        .result-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .icon-high { background: #e53e3e; }
+        .icon-medium { background: #dd6b20; }
+        .icon-good { background: #38a169; }
+
+        .result-content h4 {
+            color: #2d3748;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .result-content p {
+            color: #4a5568;
+            font-size: 14px;
+        }
+
+        /* Services Grid */
+        .services-section {
+            padding: 120px 0;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 70px;
+        }
+
+        .section-title h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .section-title p {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        .service-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 40px 30px;
+            transition: all 0.4s ease;
+            text-align: center;
+        }
+
+        .service-card:hover {
+            transform: translateY(-8px);
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .service-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(45deg, #2A4D9B, #2ECC71);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 30px;
+        }
+
+        .service-card h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: white;
+        }
+
+        .service-card p {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        /* How It Works */
+        .workflow-section {
+            padding: 120px 0;
+            background: linear-gradient(45deg, #2A4D9B, #1a365d);
+        }
+
+        .workflow-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 50px;
+            margin-top: 70px;
+        }
+
+        .workflow-step {
+            text-align: center;
+            position: relative;
+        }
+
+        .step-circle {
+            width: 90px;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            backdrop-filter: blur(10px);
+        }
+
+        .workflow-step h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .workflow-step p {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        /* Call to Action */
+        .cta-section {
+            padding: 100px 0;
+            text-align: center;
+        }
+
+        .cta-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .cta-content h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 25px;
+        }
+
+        .cta-content p {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 40px;
+        }
+
+        .cta-button {
+            background: linear-gradient(45deg, #2ECC71, #27ae60);
+            color: white;
+            padding: 20px 45px;
+            border-radius: 35px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.4s ease;
+            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 35px rgba(46, 204, 113, 0.5);
+        }
+
+        /* Disclaimer */
+        .disclaimer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            color: #ffcc00;
+            padding: 12px 0;
+            text-align: center;
+            font-size: 0.9rem;
+            z-index: 999;
+        }
+
+        .disclaimer-text {
+            animation: scroll-left 30s linear infinite;
+            white-space: nowrap;
+        }
+
+        @keyframes scroll-left {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* Ripple animation */
+        @keyframes ripple {
+            to {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+
+            .hero-title {
+                font-size: 2.8rem;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .workflow-steps {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 0 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="brand">
+                <div class="brand-icon">🔮</div>
+                LegalDmyst
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#services">Services</a></li>
+                <li><a href="#workflow">How It Works</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <a href="uploadDoc.html" class="nav-button">Try Free</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-container">
+                <div class="hero-content">
+                    <span class="hero-badge">🔮 AI-Powered Legal Demystification</span>
+                    <h1 class="hero-title">Demystifying Legal Documents with AI Intelligence</h1>
+                    <p class="hero-description">
+                        Transform confusing legal jargon into crystal-clear insights. 
+                        Our cutting-edge AI unravels complex contracts, reveals hidden risks, 
+                        and empowers you with the knowledge to make confident legal decisions.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="uploadDoc.html" class="primary-btn">
+                            <span>🚀</span>
+                            Demystify Now
+                        </a>
+                        <a href="#workflow" class="secondary-btn">
+                            <span>▶️</span>
+                            Watch Demo
+                        </a>
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <div class="demo-header">
+                        <div class="window-dot dot-red"></div>
+                        <div class="window-dot dot-yellow"></div>
+                        <div class="window-dot dot-green"></div>
+                    </div>
+                    
+                    <div class="analysis-results">
+                        <div class="result-item result-high">
+                            <div class="result-icon icon-high">⚠</div>
+                            <div class="result-content">
+                                <h4>Hidden Risk Unveiled</h4>
+                                <p>Unlimited liability clause found - requires immediate review</p>
+                            </div>
+                        </div>
+
+                        <div class="result-item result-medium">
+                            <div class="result-icon icon-medium">⚡</div>
+                            <div class="result-content">
+                                <h4>Clarity Needed</h4>
+                                <p>Payment terms are vague and could lead to disputes</p>
+                            </div>
+                        </div>
+
+                        <div class="result-item result-good">
+                            <div class="result-icon icon-good">✓</div>
+                            <div class="result-content">
+                                <h4>Mystery Solved</h4>
+                                <p>Termination clause is well-balanced and protective</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section class="services-section" id="services">
+        <div class="container">
+            <div class="section-title">
+                <h2>Unveil the Truth Behind Legal Language</h2>
+                <p>Complete toolkit to decode and understand your legal documents</p>
+            </div>
+
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">🧩</div>
+                    <h3>Legal Language Decoder</h3>
+                    <p>Break down complex legal terminology into simple, actionable language that makes sense to everyone.</p>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">🔍</div>
+                    <h3>Hidden Risk Detective</h3>
+                    <p>Uncover concealed dangers and problematic clauses that could cost you later.</p>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">💎</div>
+                    <h3>Clarity Recommendations</h3>
+                    <p>Get crystal-clear suggestions to strengthen your position and protect your interests.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Workflow Section -->
+    <section class="workflow-section" id="workflow">
+        <div class="container">
+            <div class="section-title">
+                <h2>How LegalDmyst Reveals the Truth</h2>
+                <p>Uncover legal mysteries in three simple steps</p>
+            </div>
+
+            <div class="workflow-steps">
+                <div class="workflow-step">
+                    <div class="step-circle">1</div>
+                    <h3>Upload Your Mystery</h3>
+                    <p>Securely upload any legal document - contracts, agreements, or terms of service</p>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-circle">2</div>
+                    <h3>AI Investigation</h3>
+                    <p>Our mystical AI algorithms decode every clause and reveal hidden meanings</p>
+                </div>
+
+                <div class="workflow-step">
+                    <div class="step-circle">3</div>
+                    <h3>Truth Revealed</h3>
+                    <p>Receive clear insights with demystified explanations and protective recommendations</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Unveil Legal Mysteries?</h2>
+                <p>Join the enlightened community of users who trust LegalDmyst to decode their legal documents.</p>
+                <a href="uploadDoc.html" class="cta-button">
+                    <span>🔮</span>
+                    Start Demystifying
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Disclaimer -->
+    <div class="disclaimer">
+        <div class="disclaimer-text">
+            ⚠️ Notice: LegalDmyst provides AI-powered legal document analysis for informational purposes only. This is not legal advice. Consult qualified legal professionals for official guidance. ⚠️
+        </div>
+    </div>
+
+    <script>
+        // Smooth scrolling for navigation (only for hash links)
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.style.background = 'rgba(15, 12, 41, 0.98)';
+                navbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
+            } else {
+                navbar.style.background = 'rgba(15, 12, 41, 0.95)';
+                navbar.style.boxShadow = 'none';
+            }
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.2,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe service cards and workflow steps
+        document.querySelectorAll('.service-card, .workflow-step').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'all 0.6s ease';
+            observer.observe(el);
+        });
+
+        // Add ripple effect to buttons (but don't prevent navigation)
+        document.querySelectorAll('.primary-btn, .secondary-btn, .nav-button, .cta-button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                
+                // Only prevent default for hash links
+                if (href && href.startsWith('#')) {
+                    return; // Let the smooth scroll handler above take care of it
+                }
+                
+                // For external file links (like uploadDoc.html), just add ripple effect
+                if (href && href.endsWith('.html')) {
+                    // Create ripple effect
+                    const rect = this.getBoundingClientRect();
+                    const ripple = document.createElement('div');
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.width = ripple.style.height = size + 'px';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    ripple.style.position = 'absolute';
+                    ripple.style.borderRadius = '50%';
+                    ripple.style.background = 'rgba(255, 255, 255, 0.5)';
+                    ripple.style.transform = 'scale(0)';
+                    ripple.style.animation = 'ripple 0.6s linear';
+                    ripple.style.pointerEvents = 'none';
+                    
+                    this.style.position = 'relative';
+                    this.style.overflow = 'hidden';
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
