@@ -324,17 +324,17 @@ async def question_and_answer(data: dict = Body(...)):
         raise HTTPException(status_code=404, detail="Document not found or session expired.")
 
     prompt = f"""
-    You are a helpful legal assistant. Your task is to answer the user's question based *ONLY* on the provided legal document text. Do not use any external knowledge. If the answer cannot be found in the document, you MUST state that clearly.
+    You are a helpful legal assistant. Your task is to answer the user's question based ONLY on the provided legal document text. Do not use any external knowledge. If the answer cannot be found in the document, you MUST state that clearly.
 
-    **Legal Document Text:**
+    *Legal Document Text:*
     ---
     {document_text}
     ---
 
-    **User's Question:**
+    *User's Question:*
     "{question}"
 
-    **Your Answer:**
+    *Your Answer:*
     """
     try:
         response = await model.generate_content_async(prompt)
@@ -357,7 +357,7 @@ async def suggest_questions(data: dict = Body(...)):
     prompt = f"""
     Based on the following legal document, generate a list of 3 to 5 insightful and relevant questions that a user might want to ask. These questions should focus on key obligations, risks, termination conditions, or ambiguous terms.
 
-    **Legal Document Text (first 4000 characters):**
+    *Legal Document Text (first 4000 characters):*
     ---
     {document_text[:4000]}
     ---
