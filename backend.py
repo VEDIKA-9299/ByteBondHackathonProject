@@ -294,4 +294,4 @@ async def explain_specific_clause(clause_text: str):
         response = await model.generate_content_async(prompt)
         return {"explanation": response.text}
     except Exception as e:
-        return {"explanation": f"Error explaining clause: {str(e)}"}
+        return {"explanation": f"Error explaining clause: {str(e)}"}
