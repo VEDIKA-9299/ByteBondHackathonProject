@@ -431,7 +431,7 @@
       position: absolute; 
       bottom: 0; 
       height: 4px; 
-      width: 25%; 
+      width: 20%; /* MODIFIED for 5 tabs */
       background: linear-gradient(45deg, var(--primary-blue), var(--primary-green));
       transition: left 0.4s ease; 
       left: 0;
@@ -783,10 +783,19 @@
     .animate-pulse {
       animation: pulse 2s infinite;
     }
+
+    /* --- ADDED: Styles for Q&A section --- */
+    .qna-input-container { display: flex; gap: var(--space-sm); margin-bottom: var(--space-lg); }
+    #qnaInput { flex: 1; padding: var(--space-md); border-radius: var(--border-radius-sm); border: 1px solid rgba(0,0,0,0.1); font-size: var(--text-sm); font-family: var(--font-primary); }
+    #askBtn { padding: 0 var(--space-xl); border: none; background: var(--primary-blue); color: white; font-weight: 600; border-radius: var(--border-radius-sm); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: var(--space-sm); }
+    #askBtn:hover { background: #1e3a75; }
+    .qna-answer { background: var(--bg-card-secondary); padding: var(--space-lg); border-radius: var(--border-radius-md); min-height: 100px; color: var(--text-dark); line-height: 1.6; border-left: 4px solid var(--primary-green); margin-bottom: var(--space-2xl); white-space: pre-wrap; }
+    .suggested-questions .chip { display: inline-block; background: rgba(46, 204, 113, 0.1); color: var(--primary-blue); padding: var(--space-sm) var(--space-lg); border-radius: 25px; font-size: var(--text-xs); font-weight: 600; cursor: pointer; transition: all 0.3s ease; border: 1px solid transparent; margin: var(--space-xs); }
+    .suggested-questions .chip:hover { background: rgba(46, 204, 113, 0.2); border-color: var(--primary-green); transform: translateY(-2px); }
+
   </style>
 </head>
 <body>
-  <!-- Navigation -->
   <nav class="navbar">
     <div class="nav-content">
       <a href="index.html" class="brand" style="text-decoration:none; color:inherit;">
@@ -842,6 +851,7 @@
           <div class="tab" onclick="showTab(1)">📊 Summary</div>
           <div class="tab" onclick="showTab(2)">🔍 Clauses</div>
           <div class="tab" onclick="showTab(3)">⚠️ Gaps</div>
+          <div class="tab" onclick="showTab(4)">❓ Q&A</div>
           <div class="indicator"></div>
         </div>
 
@@ -880,11 +890,34 @@
             <p class="empty-description">Potential issues and missing clauses will be identified here</p>
           </div>
         </div>
+        
+        <div class="tab-content" id="tab4">
+            <div class="qna-section">
+                <div class="section-header">Ask a Question About Your Document</div>
+                <div class="qna-input-container">
+                    <input type="text" id="qnaInput" placeholder="e.g., 'What is the governing law?'">
+                    <button id="askBtn">Ask <span class="loading-spinner" id="qnaSpinner" style="display: none;"></span></button>
+                </div>
+                <div class="qna-answer" id="qnaAnswer">
+                  <div class="empty-state" style="padding: var(--space-lg) 0;">
+                    <p class="empty-description">Your answer will appear here. Please analyze a document first.</p>
+                  </div>
+                </div>
+        
+                <div class="suggested-questions" id="suggestedQuestions">
+                    <div class="section-header">Suggested Questions</div>
+                    <div class="empty-state" style="padding: var(--space-lg) 0;">
+                        <div class="empty-icon">💡</div>
+                        <p class="empty-description">Analyze a document to generate question suggestions.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
       </div>
     </div>
   </div>
   
-  <!-- Disclaimer -->
   <div class="disclaimer">
     <div class="disclaimer-text">
       ⚠️ Notice: LegalDemyst provides AI-powered legal document analysis for informational purposes only. This is not legal advice. Consult qualified legal professionals for official guidance. ⚠️
@@ -940,6 +973,7 @@
       }
     });
 
+    // MODIFIED: Function to handle 5 tabs
     function showTab(index) {
       const tabs = document.querySelectorAll('.tab');
       const contents = document.querySelectorAll('.tab-content');
@@ -950,7 +984,7 @@
       tabs[index].classList.add('active');
       contents[index].classList.add('active');
       
-      document.querySelector('.indicator').style.left = `${index * 25}%`;
+      document.querySelector('.indicator').style.left = `${index * 20}%`;
     }
 
     function createClauseCard(term) {
@@ -1160,6 +1194,11 @@
 
         document.getElementById('tab3').innerHTML = gapsHTML;
         
+        // MODIFIED: Fetch suggested questions after analysis
+        if (analysisData.document_id) {
+            fetchSuggestedQuestions(analysisData.document_id);
+        }
+
         // Switch to Summary tab after successful analysis
         showTab(1);
 
@@ -1212,6 +1251,93 @@
         }, 600);
       });
     });
+
+    // --- ADDED: ALL JAVASCRIPT LOGIC FOR Q&A ---
+
+    // Fetches suggested questions from the backend
+    async function fetchSuggestedQuestions(documentId) {
+        try {
+            const response = await fetch(`${backendURL}/suggest-questions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ document_id: documentId })
+            });
+            if (!response.ok) throw new Error('Could not fetch suggestions.');
+            const data = await response.json();
+            populateSuggestedQuestions(data.questions);
+        } catch (error) {
+            console.error("Error fetching suggestions:", error);
+            document.getElementById('suggestedQuestions').innerHTML = '<p>Could not load suggestions.</p>';
+        }
+    }
+
+    // Creates the clickable "chip" buttons for suggested questions
+    function populateSuggestedQuestions(questions) {
+        const container = document.getElementById('suggestedQuestions');
+        if (!questions || questions.length === 0) {
+            container.innerHTML = '<p>No suggestions available.</p>';
+            return;
+        }
+        let html = '<div class="section-header">Suggested Questions</div>';
+        questions.forEach(q => {
+            const sanitizedQ = q.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            html += `<span class="chip" onclick="askSuggested('${sanitizedQ}')">${q}</span>`;
+        });
+        container.innerHTML = html;
+    }
+
+    // Called when a user clicks a suggested question chip
+    function askSuggested(question) {
+        document.getElementById('qnaInput').value = question;
+        handleAskQuestion();
+    }
+
+    // Main function to handle asking a question
+    async function handleAskQuestion() {
+        const qnaInput = document.getElementById('qnaInput');
+        const question = qnaInput.value.trim();
+        if (!question) { alert("Please enter a question."); return; }
+        if (!analysisData || !analysisData.document_id) { alert("Please analyze a document first."); return; }
+
+        const qnaSpinner = document.getElementById('qnaSpinner');
+        const askBtn = document.getElementById('askBtn');
+        const answerDiv = document.getElementById('qnaAnswer');
+
+        qnaSpinner.style.display = 'inline-block';
+        askBtn.disabled = true;
+        answerDiv.innerHTML = `<div class="empty-state" style="padding: var(--space-lg) 0;"><div class="loading-spinner" style="border-top-color: var(--primary-green);"></div><p class="empty-description">Finding an answer...</p></div>`;
+
+        try {
+            const response = await fetch(`${backendURL}/qna`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ document_id: analysisData.document_id, question: question })
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Failed to get an answer.');
+            }
+            const result = await response.json();
+            answerDiv.innerText = result.answer;
+            qnaInput.value = ''; // Clear input after asking
+        } catch (error) {
+            answerDiv.innerText = `Sorry, an error occurred: ${error.message}`;
+            console.error("Q&A Error:", error);
+        } finally {
+            qnaSpinner.style.display = 'none';
+            askBtn.disabled = false;
+        }
+    }
+
+    // Add event listeners for the Q&A button and input field
+    document.getElementById('askBtn').addEventListener('click', handleAskQuestion);
+    document.getElementById('qnaInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAskQuestion();
+        }
+    });
+
   </script>
 </body>
 </html>

@@ -1,8 +1,8 @@
-# backend.py 
+# backend.py (Complete code with Q&A functionality added)
 import os
 import json
 import pytesseract
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
@@ -11,6 +11,7 @@ from PIL import Image
 import tempfile
 from dotenv import load_dotenv
 import asyncio
+import uuid # ADDED for unique IDs
 
 # ----------------- Config / Setup -----------------
 tesseract_path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -39,6 +40,9 @@ app.add_middleware(
 
 MODEL_NAME = "gemini-1.5-flash"
 model = genai.GenerativeModel(MODEL_NAME)
+
+# --- ADDED: In-memory cache to store document text for Q&A ---
+document_cache = {}
 
 PROMPT_TEMPLATE = """
 You are an expert legal assistant. Analyze the following legal document and return ONLY valid JSON using EXACTLY these top-level keys:
@@ -260,6 +264,13 @@ async def analyze_full_document(file: UploadFile = File(...)):
                 "dispute_resolution": "Not specified",
                 "raw": parsed.get("raw")
             }
+
+        # --- MODIFICATION: Store text and add ID for Q&A ---
+        document_id = str(uuid.uuid4())
+        document_cache[document_id] = extracted_text
+        parsed["document_id"] = document_id
+        # --- END OF MODIFICATION ---
+        
         return parsed
     except Exception as e:
         return {
@@ -295,3 +306,75 @@ async def explain_specific_clause(clause_text: str):
         return {"explanation": response.text}
     except Exception as e:
         return {"explanation": f"Error explaining clause: {str(e)}"}
+
+
+# --- ADDED: NEW ENDPOINTS FOR Q&A ---
+
+# Endpoint for Q&A
+@app.post("/qna")
+async def question_and_answer(data: dict = Body(...)):
+    document_id = data.get("document_id")
+    question = data.get("question")
+
+    if not document_id or not question:
+        raise HTTPException(status_code=400, detail="document_id and question are required.")
+    
+    document_text = document_cache.get(document_id)
+    if not document_text:
+        raise HTTPException(status_code=404, detail="Document not found or session expired.")
+
+    prompt = f"""
+    You are a helpful legal assistant. Your task is to answer the user's question based *ONLY* on the provided legal document text. Do not use any external knowledge. If the answer cannot be found in the document, you MUST state that clearly.
+
+    **Legal Document Text:**
+    ---
+    {document_text}
+    ---
+
+    **User's Question:**
+    "{question}"
+
+    **Your Answer:**
+    """
+    try:
+        response = await model.generate_content_async(prompt)
+        return {"answer": response.text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating answer: {str(e)}")
+
+
+# Endpoint for suggesting questions
+@app.post("/suggest-questions")
+async def suggest_questions(data: dict = Body(...)):
+    document_id = data.get("document_id")
+    if not document_id:
+        raise HTTPException(status_code=400, detail="document_id is required.")
+        
+    document_text = document_cache.get(document_id)
+    if not document_text:
+        raise HTTPException(status_code=404, detail="Document not found or session expired.")
+
+    prompt = f"""
+    Based on the following legal document, generate a list of 3 to 5 insightful and relevant questions that a user might want to ask. These questions should focus on key obligations, risks, termination conditions, or ambiguous terms.
+
+    **Legal Document Text (first 4000 characters):**
+    ---
+    {document_text[:4000]}
+    ---
+
+    Return your answer as a valid JSON object with a single key "questions" which is an array of strings.
+    Example: {{"questions": ["What is the governing law?", "What are the termination conditions?"]}}
+    """
+    try:
+        generation_config = GenerationConfig(response_mime_type="application/json")
+        response = await model.generate_content_async(prompt, generation_config=generation_config)
+        
+        parsed_json = json.loads(response.text)
+        if "questions" in parsed_json and isinstance(parsed_json["questions"], list):
+            return parsed_json
+        else:
+            return {"questions": ["Could not generate suggestions."]}
+            
+    except Exception as e:
+        print(f"Error suggesting questions: {e}")
+        return {"questions": ["What is the main purpose of this document?", "Who are the parties involved?"]}
