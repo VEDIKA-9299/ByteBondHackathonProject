@@ -1,776 +1,709 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LegalDmyst - Demystifying Legal Documents with AI</title>
-    <link href="https://fonts.googleapis.com/css?family=Montserrat:600,800|Lato:400,500" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Lato', sans-serif;
-            background: linear-gradient(135deg, #141E30, #243B55);
-            background-size: 300% 300%;
-            animation: gradientShift 20s ease infinite;
-            color: #ffffff;
-            overflow-x: hidden;
-        }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        /* Navigation */
-        .navbar {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background: rgba(20, 30, 48, 0.95);
-            backdrop-filter: blur(20px);
-            z-index: 1000;
-            padding: 20px 0;
-            border-bottom: 1px solid rgba(46, 204, 113, 0.2);
-        }
-
-        .nav-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 800;
-            font-size: 24px;
-            color: #2ECC71;
-        }
-
-        .brand-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(45deg, #2A4D9B, #2ECC71);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .nav-menu {
-            display: flex;
-            list-style: none;
-            gap: 40px;
-        }
-
-        .nav-menu a {
-            text-decoration: none;
-            color: rgba(255, 255, 255, 0.8);
-            font-weight: 500;
-            transition: all 0.3s ease;
-            padding: 8px 0;
-            border-bottom: 2px solid transparent;
-        }
-
-        .nav-menu a:hover {
-            color: #2ECC71;
-            border-bottom-color: #2ECC71;
-        }
-
-        .nav-button {
-            background: linear-gradient(45deg, #2A4D9B, #2ECC71);
-            color: white;
-            padding: 12px 30px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.4s ease;
-            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
-        }
-
-        .nav-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.5);
-        }
-
-        /* Hero Section */
-        .hero-section {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            padding: 100px 0 50px;
-            position: relative;
-        }
-
-        .hero-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            gap: 50px;
-        }
-
-        .hero-content {
-            max-width: 800px;
-        }
-
-        .hero-badge {
-            background: rgba(46, 204, 113, 0.1);
-            border: 1px solid rgba(46, 204, 113, 0.3);
-            color: #2ECC71;
-            padding: 8px 20px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 30px;
-            display: inline-block;
-        }
-
-        .hero-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 4rem;
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 30px;
-            background: linear-gradient(135deg, #ffffff, #2ECC71);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-description {
-            font-size: 1.3rem;
-            line-height: 1.6;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 40px;
-        }
-
-        .hero-actions {
-            display: flex;
-            gap: 25px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .primary-btn {
-            background: linear-gradient(45deg, #2A4D9B, #2ECC71);
-            color: white;
-            padding: 18px 35px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 16px;
-            transition: all 0.4s ease;
-            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .primary-btn:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 10px 30px rgba(46, 204, 113, 0.5);
-        }
-
-        .secondary-btn {
-            background: transparent;
-            color: white;
-            padding: 18px 35px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 30px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 16px;
-            transition: all 0.4s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .secondary-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: #2ECC71;
-            transform: translateY(-2px);
-        }
-
-        /* Interactive Demo Card */
-        .demo-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 600px;
-            width: 100%;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-            position: relative;
-        }
-
-        .demo-header {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 25px;
-        }
-
-        .window-dot {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-        }
-
-        .dot-red { background: #ff5f57; }
-        .dot-yellow { background: #ffbd2e; }
-        .dot-green { background: #28ca42; }
-
-        .analysis-results {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .result-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 15px;
-            padding: 20px;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .result-item:hover {
-            transform: translateX(8px);
-        }
-
-        .result-high {
-            background: linear-gradient(135deg, #fff5f5, #fed7d7);
-            border-left: 5px solid #e53e3e;
-        }
-
-        .result-medium {
-            background: linear-gradient(135deg, #fffaf0, #feebc8);
-            border-left: 5px solid #dd6b20;
-        }
-
-        .result-good {
-            background: linear-gradient(135deg, #f0fff4, #c6f6d5);
-            border-left: 5px solid #38a169;
-        }
-
-        .result-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            flex-shrink: 0;
-        }
-
-        .icon-high { background: #e53e3e; }
-        .icon-medium { background: #dd6b20; }
-        .icon-good { background: #38a169; }
-
-        .result-content h4 {
-            color: #2d3748;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .result-content p {
-            color: #4a5568;
-            font-size: 14px;
-        }
-
-        /* Services Grid */
-        .services-section {
-            padding: 120px 0;
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .section-title {
-            text-align: center;
-            margin-bottom: 70px;
-        }
-
-        .section-title h2 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 2.8rem;
-            font-weight: 800;
-            margin-bottom: 20px;
-            color: white;
-        }
-
-        .section-title p {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
-        }
-
-        .service-card {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 18px;
-            padding: 40px 30px;
-            transition: all 0.4s ease;
-            text-align: center;
-        }
-
-        .service-card:hover {
-            transform: translateY(-8px);
-            background: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .service-icon {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(45deg, #2A4D9B, #2ECC71);
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 25px;
-            font-size: 30px;
-        }
-
-        .service-card h3 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: white;
-        }
-
-        .service-card p {
-            color: rgba(255, 255, 255, 0.8);
-            line-height: 1.6;
-        }
-
-        /* How It Works */
-        .workflow-section {
-            padding: 120px 0;
-            background: linear-gradient(45deg, #2A4D9B, #1a365d);
-        }
-
-        .workflow-steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 50px;
-            margin-top: 70px;
-        }
-
-        .workflow-step {
-            text-align: center;
-            position: relative;
-        }
-
-        .step-circle {
-            width: 90px;
-            height: 90px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 30px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 800;
-            backdrop-filter: blur(10px);
-        }
-
-        .workflow-step h3 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
-
-        .workflow-step p {
-            color: rgba(255, 255, 255, 0.9);
-            line-height: 1.6;
-        }
-
-        /* Call to Action */
-        .cta-section {
-            padding: 100px 0;
-            text-align: center;
-        }
-
-        .cta-content {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .cta-content h2 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 25px;
-        }
-
-        .cta-content p {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 40px;
-        }
-
-        .cta-button {
-            background: linear-gradient(45deg, #2ECC71, #27ae60);
-            color: white;
-            padding: 20px 45px;
-            border-radius: 35px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 1.1rem;
-            transition: all 0.4s ease;
-            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .cta-button:hover {
-            transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 12px 35px rgba(46, 204, 113, 0.5);
-        }
-
-        /* Disclaimer */
-        .disclaimer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            color: #ffcc00;
-            padding: 12px 0;
-            text-align: center;
-            font-size: 0.9rem;
-            z-index: 999;
-        }
-
-        .disclaimer-text {
-            animation: scroll-left 30s linear infinite;
-            white-space: nowrap;
-        }
-
-        @keyframes scroll-left {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
-
-        /* Ripple animation */
-        @keyframes ripple {
-            to {
-                transform: scale(2);
-                opacity: 0;
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-            }
-
-            .hero-title {
-                font-size: 2.8rem;
-            }
-
-            .hero-actions {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .services-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .workflow-steps {
-                grid-template-columns: 1fr;
-            }
-
-            .container {
-                padding: 0 15px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LegalDemyst - AI-Powered Legal Document Analysis</title>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:600,800|Inter:400,500,600" rel="stylesheet">
+  <style>
+    :root {
+      /* Color System */
+      --primary-blue: #2A4D9B;
+      --primary-green: #2ECC71;
+      --danger-red: #e74c3c;
+      --warning-orange: #f39c12;
+      --text-primary: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.8);
+      --text-tertiary: rgba(255, 255, 255, 0.6);
+      --text-dark: #333333;
+      --text-dark-secondary: #666666;
+      
+      /* Background System */
+      --bg-primary: linear-gradient(135deg, #141E30, #243B55);
+      --bg-glass: rgba(255, 255, 255, 0.08);
+      --bg-glass-hover: rgba(255, 255, 255, 0.12);
+      --bg-card: rgba(255, 255, 255, 0.95);
+      --bg-card-secondary: linear-gradient(135deg, #f8f9fa, #ffffff);
+      
+      /* Border System */
+      --border-glass: rgba(255, 255, 255, 0.1);
+      --border-accent: rgba(46, 204, 113, 0.2);
+      --border-radius-sm: 8px;
+      --border-radius-md: 12px;
+      --border-radius-lg: 20px;
+      --border-radius-xl: 25px;
+      
+      /* Spacing System */
+      --space-xs: 8px;
+      --space-sm: 12px;
+      --space-md: 16px;
+      --space-lg: 20px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 40px;
+      --space-4xl: 48px;
+      --space-5xl: 64px;
+      
+      /* Typography System */
+      --font-primary: 'Inter', sans-serif;
+      --font-heading: 'Montserrat', sans-serif;
+      --text-xs: 12px;
+      --text-sm: 14px;
+      --text-base: 16px;
+      --text-lg: 18px;
+      --text-xl: 20px;
+      --text-2xl: 24px;
+      --text-3xl: 32px;
+      --text-4xl: 48px;
+      --text-5xl: 64px;
+      
+      /* Shadow System */
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.15);
+      --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.2);
+      --shadow-xl: 0 15px 40px rgba(0, 0, 0, 0.3);
+      --shadow-accent: 0 4px 15px rgba(46, 204, 113, 0.3);
+    }
+
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+    }
+
+    body {
+      font-family: var(--font-primary);
+      background: var(--bg-primary);
+      background-size: 300% 300%;
+      animation: gradientShift 20s ease infinite;
+      min-height: 100vh;
+      color: var(--text-primary);
+      overflow-x: hidden;
+      font-size: var(--text-base);
+      line-height: 1.6;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Button Components */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      padding: var(--space-lg) var(--space-3xl);
+      border: none;
+      border-radius: var(--border-radius-xl);
+      font-family: var(--font-primary);
+      font-weight: 600;
+      font-size: var(--text-base);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      text-decoration: none;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(45deg, var(--primary-blue), var(--primary-green));
+      color: var(--text-primary);
+      box-shadow: var(--shadow-accent);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 25px rgba(46, 204, 113, 0.5);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(45deg, #3498db, #2980b9);
+      color: var(--text-primary);
+      box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text-primary);
+      border: 2px solid var(--border-glass);
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-outline:hover {
+      background: var(--bg-glass-hover);
+      border-color: var(--primary-green);
+      transform: translateY(-2px);
+    }
+
+    /* Navigation */
+    .navbar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(20, 30, 48, 0.95);
+      backdrop-filter: blur(20px);
+      z-index: 1000;
+      padding: var(--space-lg) 0;
+      border-bottom: 1px solid var(--border-accent);
+      transition: all 0.3s ease;
+    }
+
+    .nav-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 var(--space-lg);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-family: var(--font-heading);
+      font-weight: 800;
+      font-size: var(--text-2xl);
+      color: var(--primary-green);
+      text-decoration: none;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(45deg, var(--primary-blue), var(--primary-green));
+      border-radius: var(--border-radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--text-xl);
+    }
+
+    .nav-menu {
+      display: flex;
+      list-style: none;
+      gap: var(--space-3xl);
+    }
+
+    .nav-menu a {
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-weight: 500;
+      transition: all 0.3s ease;
+      padding: var(--space-xs) 0;
+      border-bottom: 2px solid transparent;
+    }
+
+    .nav-menu a:hover {
+      color: var(--primary-green);
+      border-bottom-color: var(--primary-green);
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px var(--space-lg) var(--space-3xl);
+    }
+
+    .hero-content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .hero-badge {
+      background: rgba(46, 204, 113, 0.1);
+      border: 1px solid rgba(46, 204, 113, 0.3);
+      color: var(--primary-green);
+      padding: var(--space-sm) var(--space-xl);
+      border-radius: 50px;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: var(--space-2xl);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-title {
+      font-size: var(--text-5xl);
+      font-weight: 800;
+      line-height: 1.1;
+      font-family: var(--font-heading);
+      background: linear-gradient(135deg, #ffffff, var(--primary-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: var(--space-2xl);
+    }
+
+    .hero-description {
+      font-size: var(--text-xl);
+      line-height: 1.6;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-4xl);
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: var(--space-xl);
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: var(--space-5xl);
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-2xl);
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: var(--space-xl);
+      background: var(--bg-glass);
+      border-radius: var(--border-radius-lg);
+      border: 1px solid var(--border-glass);
+      backdrop-filter: blur(20px);
+      transition: all 0.3s ease;
+    }
+
+    .stat-item:hover {
+      transform: translateY(-5px);
+      background: var(--bg-glass-hover);
+    }
+
+    .stat-number {
+      font-size: var(--text-3xl);
+      font-weight: 800;
+      color: var(--primary-green);
+      font-family: var(--font-heading);
+      margin-bottom: var(--space-xs);
+    }
+
+    .stat-label {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* Features Section */
+    .section {
+      padding: var(--space-5xl) var(--space-lg);
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: var(--space-5xl);
+    }
+
+    .section-title {
+      font-size: var(--text-4xl);
+      font-weight: 800;
+      font-family: var(--font-heading);
+      margin-bottom: var(--space-lg);
+      background: linear-gradient(135deg, #ffffff, var(--primary-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .section-description {
+      font-size: var(--text-lg);
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: var(--space-3xl);
+    }
+
+    .feature-card {
+      background: var(--bg-glass);
+      border-radius: var(--border-radius-lg);
+      padding: var(--space-3xl);
+      border: 1px solid var(--border-glass);
+      backdrop-filter: blur(20px);
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px) scale(1.02);
+      background: var(--bg-glass-hover);
+      box-shadow: var(--shadow-accent);
+    }
+
+    .feature-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(45deg, var(--primary-blue), var(--primary-green));
+      border-radius: var(--border-radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--text-3xl);
+      margin: 0 auto var(--space-xl);
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover .feature-icon {
+      transform: rotate(5deg) scale(1.1);
+    }
+
+    .feature-title {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      margin-bottom: var(--space-md);
+      color: var(--text-primary);
+      font-family: var(--font-heading);
+    }
+
+    .feature-description {
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      background: linear-gradient(135deg, var(--bg-glass), rgba(46, 204, 113, 0.05));
+      border-radius: var(--border-radius-xl);
+      padding: var(--space-5xl) var(--space-3xl);
+      text-align: center;
+      margin: var(--space-5xl) var(--space-lg);
+      border: 1px solid var(--border-accent);
+      backdrop-filter: blur(20px);
+    }
+
+    .cta-title {
+      font-size: var(--text-3xl);
+      font-weight: 800;
+      font-family: var(--font-heading);
+      margin-bottom: var(--space-lg);
+      color: var(--text-primary);
+    }
+
+    .cta-description {
+      font-size: var(--text-lg);
+      color: var(--text-secondary);
+      margin-bottom: var(--space-3xl);
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: var(--space-3xl) var(--space-lg);
+      color: var(--text-tertiary);
+      border-top: 1px solid var(--border-glass);
+    }
+
+    /* Disclaimer */
+    .disclaimer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      color: #ffcc00;
+      padding: var(--space-sm) 0;
+      text-align: center;
+      font-size: var(--text-sm);
+      z-index: 999;
+      border-top: 1px solid rgba(255, 204, 0, 0.2);
+    }
+
+    .disclaimer-text {
+      animation: scroll-left 35s linear infinite;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    @keyframes scroll-left {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+
+    /* Responsive Design */
+    @media(max-width: 768px) {
+      .nav-menu { display: none; }
+      .hero-title { font-size: var(--text-3xl); }
+      .hero-description { font-size: var(--text-lg); }
+      .hero-buttons { 
+        flex-direction: column; 
+        align-items: center; 
+      }
+      .btn { 
+        width: 100%; 
+        max-width: 300px; 
+      }
+      .features-grid { grid-template-columns: 1fr; }
+      .hero-stats { grid-template-columns: 1fr; }
+      .section-title { font-size: var(--text-3xl); }
+    }
+
+    /* Animation Utilities */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-fade-in {
+      animation: fadeInUp 0.8s ease;
+    }
+  </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-content">
-            <div class="brand">
-                <div class="brand-icon">🔮</div>
-                LegalDmyst
-            </div>
-            <ul class="nav-menu">
-                <li><a href="#services">Services</a></li>
-                <li><a href="#workflow">How It Works</a></li>
-                <li><a href="#pricing">Pricing</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-            <a href="uploadDoc.html" class="nav-button">Try Free</a>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="hero-section">
-        <div class="container">
-            <div class="hero-container">
-                <div class="hero-content">
-                    <span class="hero-badge">🔮 AI-Powered Legal Demystification</span>
-                    <h1 class="hero-title">Demystifying Legal Documents with AI Intelligence</h1>
-                    <p class="hero-description">
-                        Transform confusing legal jargon into crystal-clear insights. 
-                        Our cutting-edge AI unravels complex contracts, reveals hidden risks, 
-                        and empowers you with the knowledge to make confident legal decisions.
-                    </p>
-                    <div class="hero-actions">
-                        <a href="uploadDoc.html" class="primary-btn">
-                            <span>🚀</span>
-                            Demystify Now
-                        </a>
-                        <a href="#workflow" class="secondary-btn">
-                            <span>▶️</span>
-                            Watch Demo
-                        </a>
-                    </div>
-                </div>
-
-                <div class="demo-card">
-                    <div class="demo-header">
-                        <div class="window-dot dot-red"></div>
-                        <div class="window-dot dot-yellow"></div>
-                        <div class="window-dot dot-green"></div>
-                    </div>
-                    
-                    <div class="analysis-results">
-                        <div class="result-item result-high">
-                            <div class="result-icon icon-high">⚠</div>
-                            <div class="result-content">
-                                <h4>Hidden Risk Unveiled</h4>
-                                <p>Unlimited liability clause found - requires immediate review</p>
-                            </div>
-                        </div>
-
-                        <div class="result-item result-medium">
-                            <div class="result-icon icon-medium">⚡</div>
-                            <div class="result-content">
-                                <h4>Clarity Needed</h4>
-                                <p>Payment terms are vague and could lead to disputes</p>
-                            </div>
-                        </div>
-
-                        <div class="result-item result-good">
-                            <div class="result-icon icon-good">✓</div>
-                            <div class="result-content">
-                                <h4>Mystery Solved</h4>
-                                <p>Termination clause is well-balanced and protective</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Services Section -->
-    <section class="services-section" id="services">
-        <div class="container">
-            <div class="section-title">
-                <h2>Unveil the Truth Behind Legal Language</h2>
-                <p>Complete toolkit to decode and understand your legal documents</p>
-            </div>
-
-            <div class="services-grid">
-                <div class="service-card">
-                    <div class="service-icon">🧩</div>
-                    <h3>Legal Language Decoder</h3>
-                    <p>Break down complex legal terminology into simple, actionable language that makes sense to everyone.</p>
-                </div>
-
-                <div class="service-card">
-                    <div class="service-icon">🔍</div>
-                    <h3>Hidden Risk Detective</h3>
-                    <p>Uncover concealed dangers and problematic clauses that could cost you later.</p>
-                </div>
-
-                <div class="service-card">
-                    <div class="service-icon">💎</div>
-                    <h3>Clarity Recommendations</h3>
-                    <p>Get crystal-clear suggestions to strengthen your position and protect your interests.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Workflow Section -->
-    <section class="workflow-section" id="workflow">
-        <div class="container">
-            <div class="section-title">
-                <h2>How LegalDmyst Reveals the Truth</h2>
-                <p>Uncover legal mysteries in three simple steps</p>
-            </div>
-
-            <div class="workflow-steps">
-                <div class="workflow-step">
-                    <div class="step-circle">1</div>
-                    <h3>Upload Your Mystery</h3>
-                    <p>Securely upload any legal document - contracts, agreements, or terms of service</p>
-                </div>
-
-                <div class="workflow-step">
-                    <div class="step-circle">2</div>
-                    <h3>AI Investigation</h3>
-                    <p>Our mystical AI algorithms decode every clause and reveal hidden meanings</p>
-                </div>
-
-                <div class="workflow-step">
-                    <div class="step-circle">3</div>
-                    <h3>Truth Revealed</h3>
-                    <p>Receive clear insights with demystified explanations and protective recommendations</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="cta-section">
-        <div class="container">
-            <div class="cta-content">
-                <h2>Ready to Unveil Legal Mysteries?</h2>
-                <p>Join the enlightened community of users who trust LegalDmyst to decode their legal documents.</p>
-                <a href="uploadDoc.html" class="cta-button">
-                    <span>🔮</span>
-                    Start Demystifying
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Disclaimer -->
-    <div class="disclaimer">
-        <div class="disclaimer-text">
-            ⚠️ Notice: LegalDmyst provides AI-powered legal document analysis for informational purposes only. This is not legal advice. Consult qualified legal professionals for official guidance. ⚠️
-        </div>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-content">
+      <a href="#" class="brand">
+        <div class="brand-icon">🔮</div>
+        LegalDemyst
+      </a>
+      <ul class="nav-menu">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <a href="uploadDoc.html" class="btn btn-primary text-sm">Try Free</a>
     </div>
+  </nav>
 
-    <script>
-        // Smooth scrolling for navigation (only for hash links)
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content animate-fade-in">
+      <div class="hero-badge">🚀 Powered by Advanced AI Technology</div>
+      
+      <h1 class="hero-title">
+        Decode Legal Complexity with 
+        <span style="color: var(--primary-green);">Predictive AI</span>
+      </h1>
+      
+      <p class="hero-description">
+        Transform dense legal documents into clear, actionable insights in seconds. 
+        Our AI analyzes contracts, identifies risks, and explains complex terms in plain English.
+      </p>
+      
+      <div class="hero-buttons">
+        <a href="uploadDoc.html" class="btn btn-primary">
+          🚀 Start Free Analysis
+        </a>
+        <a href="#features" class="btn btn-outline">
+          📖 Learn More
+        </a>
+      </div>
+      
+      
+  </section>
 
-        // Navbar scroll effect
-        window.addEventListener('scroll', () => {
-            const navbar = document.querySelector('.navbar');
-            if (window.scrollY > 50) {
-                navbar.style.background = 'rgba(15, 12, 41, 0.98)';
-                navbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
-            } else {
-                navbar.style.background = 'rgba(15, 12, 41, 0.95)';
-                navbar.style.boxShadow = 'none';
-            }
-        });
+  <!-- Features Section -->
+  <section class="section" id="features">
+    <div class="section-header">
+      <h2 class="section-title">Why Choose LegalDemyst?</h2>
+      <p class="section-description">
+        Cutting-edge AI technology meets legal expertise to deliver unparalleled document analysis
+      </p>
+    </div>
+    
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3 class="feature-title">Smart Risk Detection</h3>
+        <p class="feature-description">
+          Advanced AI identifies potential legal risks and red flags in your documents, 
+          helping you avoid costly oversights and protect your interests.
+        </p>
+      </div>
 
-        // Intersection Observer for animations
-        const observerOptions = {
-            threshold: 0.2,
-            rootMargin: '0px 0px -50px 0px'
-        };
+      
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3 class="feature-title">Comprehensive Reports</h3>
+        <p class="feature-description">
+          Detailed analysis including clause breakdown, risk assessment, 
+          missing provisions, and actionable recommendations.
+        </p>
+      </div>
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, observerOptions);
+      
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3 class="feature-title">Multiple Formats</h3>
+        <p class="feature-description">
+          Support for PDF, DOC, DOCX, TXT, and image files. 
+          Analyze any legal document regardless of its format.
+        </p>
+      </div>
+    </div>
+  </section>
 
-        // Observe service cards and workflow steps
-        document.querySelectorAll('.service-card, .workflow-step').forEach(el => {
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(30px)';
-            el.style.transition = 'all 0.6s ease';
-            observer.observe(el);
-        });
+  <!-- How It Works Section -->
+  <section class="section" id="how-it-works">
+    <div class="section-header">
+      <h2 class="section-title">How It Works</h2>
+      <p class="section-description">
+        Get professional-grade legal analysis in three simple steps
+      </p>
+    </div>
+    
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📤</div>
+        <h3 class="feature-title">1. Upload Document</h3>
+        <p class="feature-description">
+          Simply drag and drop your legal document or browse to select it. 
+          We support all major file formats including PDF, DOC, and images.
+        </p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3 class="feature-title">2. AI Analysis</h3>
+        <p class="feature-description">
+          Our advanced AI processes your document, identifying key clauses, 
+          potential risks, and important terms in just seconds.
+        </p>
+      </div>
+      
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3 class="feature-title">3. Get Insights</h3>
+        <p class="feature-description">
+          Receive a comprehensive report with risk assessment, clause analysis, 
+          and plain English explanations to make informed decisions.
+        </p>
+      </div>
+    </div>
+  </section>
 
-        // Add ripple effect to buttons (but don't prevent navigation)
-        document.querySelectorAll('.primary-btn, .secondary-btn, .nav-button, .cta-button').forEach(button => {
-            button.addEventListener('click', function(e) {
-                const href = this.getAttribute('href');
-                
-                // Only prevent default for hash links
-                if (href && href.startsWith('#')) {
-                    return; // Let the smooth scroll handler above take care of it
-                }
-                
-                // For external file links (like uploadDoc.html), just add ripple effect
-                if (href && href.endsWith('.html')) {
-                    // Create ripple effect
-                    const rect = this.getBoundingClientRect();
-                    const ripple = document.createElement('div');
-                    const size = Math.max(rect.width, rect.height);
-                    const x = e.clientX - rect.left - size / 2;
-                    const y = e.clientY - rect.top - size / 2;
-                    
-                    ripple.style.width = ripple.style.height = size + 'px';
-                    ripple.style.left = x + 'px';
-                    ripple.style.top = y + 'px';
-                    ripple.style.position = 'absolute';
-                    ripple.style.borderRadius = '50%';
-                    ripple.style.background = 'rgba(255, 255, 255, 0.5)';
-                    ripple.style.transform = 'scale(0)';
-                    ripple.style.animation = 'ripple 0.6s linear';
-                    ripple.style.pointerEvents = 'none';
-                    
-                    this.style.position = 'relative';
-                    this.style.overflow = 'hidden';
-                    this.appendChild(ripple);
-                    
-                    setTimeout(() => {
-                        ripple.remove();
-                    }, 600);
-                }
-            });
-        });
-    </script>
+  <!-- CTA Section -->
+  <div class="cta-section">
+    <h2 class="cta-title">Ready to Demystify Your Legal Documents?</h2>
+    <p class="cta-description">
+      Join thousands of professionals who trust LegalDemyst for fast, accurate legal document analysis.
+    </p>
+    <a href="uploadDoc.html" class="btn btn-primary">
+      🚀 Start Your Free Analysis
+    </a>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2025 LegalDemyst. All rights reserved. | Made with 💚 for legal clarity</p>
+  </footer>
+  
+  <!-- Disclaimer -->
+  <div class="disclaimer">
+    <div class="disclaimer-text">
+      ⚠️ Notice: LegalDemyst provides AI-powered legal document analysis for informational purposes only. This is not legal advice. Consult qualified legal professionals for official guidance. ⚠️
+    </div>
+  </div>
+
+  <script>
+    // Navbar scroll effect
+    window.addEventListener('scroll', () => {
+      const navbar = document.querySelector('.navbar');
+      if (window.scrollY > 50) {
+        navbar.style.background = 'rgba(20, 30, 48, 0.98)';
+        navbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
+      } else {
+        navbar.style.background = 'rgba(20, 30, 48, 0.95)';
+        navbar.style.boxShadow = 'none';
+      }
+    });
+
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Add ripple effects to buttons
+    document.querySelectorAll('.btn').forEach(button => {
+      button.addEventListener('click', function(e) {
+        const rect = this.getBoundingClientRect();
+        const ripple = document.createElement('div');
+        const size = Math.max(rect.width, rect.height);
+        const x = e.clientX - rect.left - size / 2;
+        const y = e.clientY - rect.top - size / 2;
+        
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+        ripple.style.position = 'absolute';
+        ripple.style.borderRadius = '50%';
+        ripple.style.background = 'rgba(255, 255, 255, 0.3)';
+        ripple.style.transform = 'scale(0)';
+        ripple.style.animation = 'ripple 0.6s linear';
+        ripple.style.pointerEvents = 'none';
+        
+        this.style.position = 'relative';
+        this.style.overflow = 'hidden';
+        this.appendChild(ripple);
+        
+        setTimeout(() => {
+          ripple.remove();
+        }, 600);
+      });
+    });
+
+    // Intersection Observer for animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-fade-in');
+        }
+      });
+    }, observerOptions);
+
+    // Observe all feature cards and sections
+    document.querySelectorAll('.feature-card, .section').forEach(el => {
+      observer.observe(el);
+    });
+  </script>
 </body>
 </html>
