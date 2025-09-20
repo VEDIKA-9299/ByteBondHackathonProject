@@ -173,13 +173,19 @@
       letter-spacing: 0.5px;
     }
 
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
     .btn-primary {
       background: linear-gradient(45deg, var(--primary-blue), var(--primary-green));
       color: var(--text-primary);
       box-shadow: var(--shadow-accent);
     }
 
-    .btn-primary:hover {
+    .btn-primary:hover:not(:disabled) {
       transform: translateY(-2px) scale(1.02);
       box-shadow: 0 8px 25px rgba(46, 204, 113, 0.5);
     }
@@ -190,7 +196,7 @@
       box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
     }
 
-    .btn-secondary:hover {
+    .btn-secondary:hover:not(:disabled) {
       transform: translateY(-2px) scale(1.02);
       box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
     }
@@ -602,6 +608,58 @@
       backdrop-filter: blur(5px);
     }
 
+    /* Modal */
+    .modal {
+      display: none; 
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      color: #222;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+      animation: popupFade 0.3s ease-in-out;
+      position: relative;
+    }
+
+    .modal-content h3 {
+      color: #d9534f;
+      margin-bottom: 10px;
+    }
+
+    .modal-actions {
+      margin-top: 15px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .close-btn {
+      position: absolute;
+      right: 15px;
+      top: 10px;
+      font-size: 20px;
+      cursor: pointer;
+      color: #555;
+    }
+
+    @keyframes popupFade {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
     /* Verdict Section */
     .verdict-section {
       text-align: center;
@@ -728,6 +786,70 @@
       100% { transform: translateX(-100%); }
     }
 
+    /* Q&A Section Styles */
+    .qna-input-container { 
+      display: flex; 
+      gap: var(--space-sm); 
+      margin-bottom: var(--space-lg); 
+    }
+    
+    #qnaInput { 
+      flex: 1; 
+      padding: var(--space-md); 
+      border-radius: var(--border-radius-sm); 
+      border: 1px solid rgba(0,0,0,0.1); 
+      font-size: var(--text-sm); 
+      font-family: var(--font-primary); 
+    }
+    
+    #askBtn { 
+      padding: 0 var(--space-xl); 
+      border: none; 
+      background: var(--primary-blue); 
+      color: white; 
+      font-weight: 600; 
+      border-radius: var(--border-radius-sm); 
+      cursor: pointer; 
+      transition: all 0.3s ease; 
+      display: flex; 
+      align-items: center; 
+      gap: var(--space-sm); 
+    }
+    
+    #askBtn:hover { background: #1e3a75; }
+    
+    .qna-answer { 
+      background: var(--bg-card-secondary); 
+      padding: var(--space-lg); 
+      border-radius: var(--border-radius-md); 
+      min-height: 100px; 
+      color: var(--text-dark); 
+      line-height: 1.6; 
+      border-left: 4px solid var(--primary-green); 
+      margin-bottom: var(--space-2xl); 
+      white-space: pre-wrap; 
+    }
+    
+    .suggested-questions .chip { 
+      display: inline-block; 
+      background: rgba(46, 204, 113, 0.1); 
+      color: var(--primary-blue); 
+      padding: var(--space-sm) var(--space-lg); 
+      border-radius: 25px; 
+      font-size: var(--text-xs); 
+      font-weight: 600; 
+      cursor: pointer; 
+      transition: all 0.3s ease; 
+      border: 1px solid transparent; 
+      margin: var(--space-xs); 
+    }
+    
+    .suggested-questions .chip:hover { 
+      background: rgba(46, 204, 113, 0.2); 
+      border-color: var(--primary-green); 
+      transform: translateY(-2px); 
+    }
+
     /* Responsive Design */
     @media(max-width: 1200px) {
       .container { 
@@ -784,43 +906,6 @@
       animation: pulse 2s infinite;
     }
 
-    /* --- ADDED: Styles for Q&A section --- */
-    .qna-input-container { display: flex; gap: var(--space-sm); margin-bottom: var(--space-lg); }
-    #qnaInput { flex: 1; padding: var(--space-md); border-radius: var(--border-radius-sm); border: 1px solid rgba(0,0,0,0.1); font-size: var(--text-sm); font-family: var(--font-primary); }
-    #askBtn { padding: 0 var(--space-xl); border: none; background: var(--primary-blue); color: white; font-weight: 600; border-radius: var(--border-radius-sm); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: var(--space-sm); }
-    #askBtn:hover { background: #1e3a75; }
-    .qna-answer { background: var(--bg-card-secondary); padding: var(--space-lg); border-radius: var(--border-radius-md); min-height: 100px; color: var(--text-dark); line-height: 1.6; border-left: 4px solid var(--primary-green); margin-bottom: var(--space-2xl); white-space: pre-wrap; }
-    .suggested-questions .chip { display: inline-block; background: rgba(46, 204, 113, 0.1); color: var(--primary-blue); padding: var(--space-sm) var(--space-lg); border-radius: 25px; font-size: var(--text-xs); font-weight: 600; cursor: pointer; transition: all 0.3s ease; border: 1px solid transparent; margin: var(--space-xs); }
-    .suggested-questions .chip:hover { background: rgba(46, 204, 113, 0.2); border-color: var(--primary-green); transform: translateY(-2px); }
-
-    /* --- ADDED: Styles for Inline Risk Warning Card --- */
-    .risk-summary-card {
-        display: flex;
-        align-items: center;
-        gap: var(--space-xl);
-        background: linear-gradient(135deg, #fff5f5, #ffffff);
-        border: 2px solid var(--danger-red);
-        padding: var(--space-2xl);
-        margin-top: var(--space-2xl);
-        border-radius: var(--border-radius-lg);
-        box-shadow: 0 4px 15px rgba(231, 76, 60, 0.15);
-    }
-    .risk-icon {
-        font-size: var(--text-4xl);
-    }
-    .risk-content {
-        flex: 1;
-    }
-    .risk-title {
-        color: var(--danger-red);
-        margin-bottom: var(--space-sm);
-    }
-    .risk-text {
-        color: var(--text-dark-secondary);
-        line-height: 1.6;
-        margin-bottom: var(--space-lg);
-    }
-
   </style>
 </head>
 <body>
@@ -837,7 +922,7 @@
         <li><a href="#pricing">Pricing</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
-      <a href="index.html" class="btn btn-primary text-sm">← Back to Home</a>
+      <a href="uploadDoc.html" class="btn btn-primary text-sm">← Back to Home</a>
     </div>
   </nav>
 
@@ -861,10 +946,14 @@
         <input type="file" id="fileInput" accept=".doc,.docx,.pdf,.txt">
 
         <div class="buttons">
-          <button class="btn btn-secondary" onclick="analyzeDocument()">
+          <button class="btn btn-secondary" id="analyzeBtn" onclick="analyzeDocument()">
             <span>🔍</span>
             Analyze Document
             <span class="loading-spinner" id="analyzeSpinner" style="display: none;"></span>
+          </button>
+          <button class="btn btn-primary" id="proceedBtn" onclick="showProceedPopup()" disabled>
+            <span>➡️</span>
+            Proceed For Resolution
           </button>
         </div>
         
@@ -964,6 +1053,32 @@
           </div>
       </div>
   </div>
+
+  <!-- Proceed Modal for unanalyzed documents -->
+  <div id="proceedModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeProceedPopup()">&times;</span>
+      <h3>⚠️ Please Analyze Document First</h3>
+      <p>You need to analyze your document before proceeding to the next steps.</p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="closeProceedPopup()">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Suggestion Modal for analyzed documents -->
+  <div id="aiSuggestionModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeAiSuggestionModal()">&times;</span>
+      <h3>🤖 AI Recommendation</h3>
+      <p>Before proceeding, we strongly recommend carefully reviewing the <strong>Clauses</strong> and <strong>Gaps</strong> sections to understand all potential risks and missing elements in your document.</p>
+      <p style="margin-top: 15px; font-size: 14px; color: #666;">Have you reviewed these sections thoroughly?</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeAiSuggestionModal()">Let me review first</button>
+        <button class="btn btn-primary" onclick="confirmProceed()">Yes, proceed anyway</button>
+      </div>
+    </div>
+  </div>
   
   <div class="disclaimer">
     <div class="disclaimer-text">
@@ -975,6 +1090,7 @@
     const backendURL = "http://127.0.0.1:8001";
     let uploadedFile = null;
     let analysisData = null;
+    let isAnalysisComplete = false;
 
     // Navbar scroll effect
     window.addEventListener('scroll', () => {
@@ -1015,8 +1131,12 @@
         `;
         
         // Add pulse effect to analyze button
-        const analyzeBtn = document.querySelector('.btn-secondary');
+        const analyzeBtn = document.getElementById('analyzeBtn');
         analyzeBtn.classList.add('animate-pulse');
+        
+        // Reset analysis state
+        isAnalysisComplete = false;
+        document.getElementById('proceedBtn').disabled = true;
       }
     });
 
@@ -1097,9 +1217,18 @@
         return; 
       }
       
+      console.log("Starting analysis...", uploadedFile.name);
+      
+      // Show loading spinners
+      const analyzeSpinner = document.getElementById('analyzeSpinner');
+      const analyzeBtn = document.getElementById('analyzeBtn');
+      
+      if (analyzeSpinner) analyzeSpinner.style.display = 'inline-block';
+      if (analyzeBtn) analyzeBtn.disabled = true;
+      
       const loadingHTML = `
         <div class="empty-state" style="color: var(--primary-green);">
-          <div class="loading-spinner" style="margin: 0 auto var(--space-lg);"></div>
+          <div class="loading-spinner" style="margin: 0 auto var(--space-lg); border-top-color: var(--primary-green);"></div>
           <p class="empty-title">Analyzing your document...</p>
           <p class="empty-description">This may take a few moments</p>
         </div>
@@ -1112,14 +1241,25 @@
       const formData = new FormData();
       formData.append('file', uploadedFile);
 
+      console.log("Sending request to:", `${backendURL}/analyze`);
+
       try {
-        const response = await fetch(`${backendURL}/analyze`, { method: 'POST', body: formData });
+        const response = await fetch(`${backendURL}/analyze`, { 
+          method: 'POST', 
+          body: formData,
+          // Don't set Content-Type header, let browser set it for FormData
+        });
+        
+        console.log("Response status:", response.status);
         
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorText = await response.text();
+          console.error("Server error:", errorText);
+          throw new Error(`HTTP error! status: ${response.status}. ${errorText}`);
         }
         
         const data = await response.json();
+        console.log("Analysis data received:", data);
         analysisData = data;
 
         // Populate Summary Tab
@@ -1146,6 +1286,7 @@
             </div>
           </div>
         `;
+        
         if (data.key_obligations && data.key_obligations.length > 0) {
           summaryHTML += `
             <div class="section">
@@ -1171,24 +1312,12 @@
         }
         document.getElementById('tab2').innerHTML = clausesHTML;
 
-        // Populate Gaps Tab
+        // Populate Gaps Tab (removed the inline warning card)
         let gapsHTML = `<div class="section"><h3 class="section-header" style="color: var(--danger-red);">⚠️ Potential Issues & Missing Clauses</h3></div>`;
         if (data.gaps && data.gaps.length > 0) {
           data.gaps.forEach(gap => {
             gapsHTML += createGapCard(gap);
           });
-
-          // --- MODIFIED: Append the inline warning card at the end of the gaps list ---
-          gapsHTML += `
-            <div class="risk-summary-card">
-              <div class="risk-icon">⚠️</div>
-              <div class="risk-content">
-                <h3 class="risk-title heading">Significant Risks Identified</h3>
-                <p class="risk-text">Based on the gaps found, we recommend taking further action to protect your interests.</p>
-                <button class="btn btn-primary" onclick="proceedToNextSteps()">Proceed to Resolution Options</button>
-              </div>
-            </div>
-          `;
         } else {
           gapsHTML += `<div class="empty-state"><div class="empty-icon" style="color: var(--primary-green);">✅</div><h4 class="empty-title" style="color: var(--primary-green);">No Major Gaps Identified</h4><p class="empty-description">This document appears to cover the essential legal bases.</p></div>`;
         }
@@ -1199,32 +1328,64 @@
         }
 
         showTab(1);
-        const analyzeBtn = document.querySelector('.btn-secondary');
+        
+        // Analysis complete - enable Proceed button
+        isAnalysisComplete = true;
+        document.getElementById('proceedBtn').disabled = false;
+        
+        const analyzeBtn = document.getElementById('analyzeBtn');
         analyzeBtn.classList.remove('animate-pulse');
+        
       } catch (err) {
-        console.error('Analysis error:', err);
+        console.error('Analysis error details:', err);
         const errorHTML = `
           <div class="empty-state" style="color: var(--danger-red);">
             <div class="empty-icon">❌</div>
             <p class="empty-title">Analysis Failed</p>
-            <p class="empty-description">Error: ${err.message || 'Connection failed - make sure the backend is running'}</p>
+            <p class="empty-description">Error: ${err.message || 'Connection failed'}</p>
+            <p class="text-xs" style="margin-top: var(--space-sm); color: var(--text-dark-secondary);">
+              Check console for details. Make sure backend is running on ${backendURL}
+            </p>
           </div>
         `;
         document.getElementById('summarySection').innerHTML = errorHTML;
         document.getElementById('tab2').innerHTML = errorHTML;
         document.getElementById('tab3').innerHTML = errorHTML;
+      } finally {
+        // Hide loading spinner and re-enable button
+        if (analyzeSpinner) analyzeSpinner.style.display = 'none';
+        if (analyzeBtn) analyzeBtn.disabled = false;
       }
     }
 
-    // --- ADDED: LOGIC FOR NEXT STEPS ---
+    function showProceedPopup() {
+      if (!isAnalysisComplete) {
+        document.getElementById('proceedModal').style.display = 'flex';
+        return;
+      }
+      // If analysis is complete, show AI recommendation modal
+      document.getElementById('aiSuggestionModal').style.display = 'flex';
+    }
+
+    function closeProceedPopup() {
+      document.getElementById('proceedModal').style.display = 'none';
+    }
+
+    function closeAiSuggestionModal() {
+      document.getElementById('aiSuggestionModal').style.display = 'none';
+    }
+
+    function confirmProceed() {
+      document.getElementById('aiSuggestionModal').style.display = 'none';
+      proceedToNextSteps();
+    }
 
     function proceedToNextSteps() {
         document.getElementById('analysisContainer').style.display = 'none';
         document.getElementById('nextStepsContainer').style.display = 'flex';
     }
 
-    // --- JAVASCRIPT LOGIC FOR Q&A ---
-
+    // Q&A Functions
     async function fetchSuggestedQuestions(documentId) {
         try {
             const response = await fetch(`${backendURL}/suggest-questions`, {
@@ -1303,6 +1464,7 @@
             handleAskQuestion();
         }
     });
+
   </script>
 </body>
 </html>
