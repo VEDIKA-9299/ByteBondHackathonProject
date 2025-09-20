@@ -922,7 +922,7 @@
         <li><a href="#pricing">Pricing</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
-      <a href="index.html" class="btn btn-primary text-sm">← Back to Home</a>
+      <a href="uploadDoc.html" class="btn btn-primary text-sm">← Back to Home</a>
     </div>
   </nav>
 
@@ -1054,7 +1054,7 @@
       </div>
   </div>
 
-  <!-- Proceed Modal -->
+  <!-- Proceed Modal for unanalyzed documents -->
   <div id="proceedModal" class="modal">
     <div class="modal-content">
       <span class="close-btn" onclick="closeProceedPopup()">&times;</span>
@@ -1062,6 +1062,20 @@
       <p>You need to analyze your document before proceeding to the next steps.</p>
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="closeProceedPopup()">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Suggestion Modal for analyzed documents -->
+  <div id="aiSuggestionModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeAiSuggestionModal()">&times;</span>
+      <h3>🤖 AI Recommendation</h3>
+      <p>Before proceeding, we strongly recommend carefully reviewing the <strong>Clauses</strong> and <strong>Gaps</strong> sections to understand all potential risks and missing elements in your document.</p>
+      <p style="margin-top: 15px; font-size: 14px; color: #666;">Have you reviewed these sections thoroughly?</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeAiSuggestionModal()">Let me review first</button>
+        <button class="btn btn-primary" onclick="confirmProceed()">Yes, proceed anyway</button>
       </div>
     </div>
   </div>
@@ -1203,11 +1217,14 @@
         return; 
       }
       
+      console.log("Starting analysis...", uploadedFile.name);
+      
       // Show loading spinners
       const analyzeSpinner = document.getElementById('analyzeSpinner');
       const analyzeBtn = document.getElementById('analyzeBtn');
-      analyzeSpinner.style.display = 'inline-block';
-      analyzeBtn.disabled = true;
+      
+      if (analyzeSpinner) analyzeSpinner.style.display = 'inline-block';
+      if (analyzeBtn) analyzeBtn.disabled = true;
       
       const loadingHTML = `
         <div class="empty-state" style="color: var(--primary-green);">
@@ -1224,14 +1241,25 @@
       const formData = new FormData();
       formData.append('file', uploadedFile);
 
+      console.log("Sending request to:", `${backendURL}/analyze`);
+
       try {
-        const response = await fetch(`${backendURL}/analyze`, { method: 'POST', body: formData });
+        const response = await fetch(`${backendURL}/analyze`, { 
+          method: 'POST', 
+          body: formData,
+          // Don't set Content-Type header, let browser set it for FormData
+        });
+        
+        console.log("Response status:", response.status);
         
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorText = await response.text();
+          console.error("Server error:", errorText);
+          throw new Error(`HTTP error! status: ${response.status}. ${errorText}`);
         }
         
         const data = await response.json();
+        console.log("Analysis data received:", data);
         analysisData = data;
 
         // Populate Summary Tab
@@ -1309,12 +1337,15 @@
         analyzeBtn.classList.remove('animate-pulse');
         
       } catch (err) {
-        console.error('Analysis error:', err);
+        console.error('Analysis error details:', err);
         const errorHTML = `
           <div class="empty-state" style="color: var(--danger-red);">
             <div class="empty-icon">❌</div>
             <p class="empty-title">Analysis Failed</p>
-            <p class="empty-description">Error: ${err.message || 'Connection failed - make sure the backend is running'}</p>
+            <p class="empty-description">Error: ${err.message || 'Connection failed'}</p>
+            <p class="text-xs" style="margin-top: var(--space-sm); color: var(--text-dark-secondary);">
+              Check console for details. Make sure backend is running on ${backendURL}
+            </p>
           </div>
         `;
         document.getElementById('summarySection').innerHTML = errorHTML;
@@ -1322,8 +1353,8 @@
         document.getElementById('tab3').innerHTML = errorHTML;
       } finally {
         // Hide loading spinner and re-enable button
-        analyzeSpinner.style.display = 'none';
-        analyzeBtn.disabled = false;
+        if (analyzeSpinner) analyzeSpinner.style.display = 'none';
+        if (analyzeBtn) analyzeBtn.disabled = false;
       }
     }
 
@@ -1332,12 +1363,21 @@
         document.getElementById('proceedModal').style.display = 'flex';
         return;
       }
-      // If analysis is complete, proceed directly to next steps
-      proceedToNextSteps();
+      // If analysis is complete, show AI recommendation modal
+      document.getElementById('aiSuggestionModal').style.display = 'flex';
     }
 
     function closeProceedPopup() {
       document.getElementById('proceedModal').style.display = 'none';
+    }
+
+    function closeAiSuggestionModal() {
+      document.getElementById('aiSuggestionModal').style.display = 'none';
+    }
+
+    function confirmProceed() {
+      document.getElementById('aiSuggestionModal').style.display = 'none';
+      proceedToNextSteps();
     }
 
     function proceedToNextSteps() {
