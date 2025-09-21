@@ -26,7 +26,7 @@ pytesseract.pytesseract.tesseract_cmd = tesseract_path
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 if not api_key:
-    api_key = "AIzaSyB4h2wCQMaWl2WuHv1C1kJmsBIbNoSuOmY"  # placeholder
+    api_key = "" 
     print("Warning: GOOGLE_API_KEY not found; using placeholder. Replace before production.")
 genai.configure(api_key=api_key)
 
